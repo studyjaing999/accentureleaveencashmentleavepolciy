@@ -1,0 +1,193 @@
+var IM_CLD_CentRum = function (e) {
+	var lib = {
+		log: function (param) {
+
+			ddVersion = 'datadog-rum-v4.js';
+
+			(function (h, o, u, n, d) {
+				h = h[d] = h[d] || { q: [], onReady: function (c) { h.q.push(c) } }
+				d = o.createElement(u); d.async = 1; d.src = n
+				n = o.getElementsByTagName(u)[0]; n.parentNode.insertBefore(d, n)
+			})(window, document, 'script', 'https://www.datadoghq-browser-agent.com/' + ddVersion, 'DD_RUM')
+			DD_RUM.onReady(function () {
+				DD_RUM.init({
+					clientToken: param.clientToken,
+					applicationId: param.applicationId,
+					site: 'datadoghq.com',
+					service: param.service,
+					env: param.env,
+					sampleRate: param.sampleRate,
+					sessionReplaySampleRate: 0,
+					trackResources: true,
+					trackLongTasks: true,
+					trackUserInteractions: param.trackInteractions,
+					allowedTracingOrigins: [param.allowedTracingOrigins],
+					useSecureSessionCookie: true
+				}),
+
+					//For adding AIRID Tag to Usage Attribution
+					DD_RUM.setGlobalContext({ 'airid': param.service.match(/\d+/)[0] });
+			})
+
+			function setCookie(e, r, i) {
+				var t = new Date; t.setTime(t.getTime() + 24 * i * 60 * 60 * 1e3);
+				var d = "expires=" + t.toUTCString(); document.cookie = e + "=" + r + ";" + d + ";path=/;SameSite=None;secure"
+			}
+			function getCookie(e) {
+				for (var r = e + "=", i = document.cookie.split(";"), t = 0; t < i.length; t++) {
+					for (var d = i[t]; " " == d.charAt(0);)d = d.substring(1);
+					if (0 == d.indexOf(r)) return d.substring(r.length, d.length)
+				} return ""
+			}
+
+			var dduserid = getCookie("_dduserid");
+
+			//for decoding token
+			let decodeJwt = function (jwtToken) {
+				var idTokenPartsRegex = /^([^\.\s]*)\.([^\.\s]+)\.([^\.\s]*)$/;
+
+				var matches = idTokenPartsRegex.exec(jwtToken);
+				if (!matches || matches.length < 4) {
+					console.error('The returned id_token is not parseable.');
+					return null;
+				}
+
+				var crackedToken = {
+					header: matches[1],
+					JWSPayload: matches[2],
+					JWSSig: matches[3]
+				};
+
+				return crackedToken;
+			};
+
+			let base64DecodeStringUrlSafe = function (base64IdToken) {
+				// html5 should support atob function for decoding
+				base64IdToken = base64IdToken.replace(/-/g, '+').replace(/_/g, '/');
+				if (window.atob) {
+					return decodeURIComponent(escape(window.atob(base64IdToken))); // jshint ignore:line
+				}
+
+				// TODO add support for this
+				console.error('Browser is not supported');
+				return null;
+			};
+
+			let extractToken = function (encodedToken) {
+				//payload will be decoded
+				var decodedToken = decodeJwt(encodedToken);
+				if (!decodedToken) {
+					return null;
+				}
+
+				try {
+					var base64IdToken = decodedToken.JWSPayload;
+					var base64Decoded = base64DecodeStringUrlSafe(base64IdToken);
+					if (!base64Decoded) {
+						console.error('The returned id_token could not be base64 url safe decoded.');
+						return null;
+					}
+
+					// ECMA script has JSON built-in support
+					return JSON.parse(base64Decoded);
+				} catch (err) {
+					console.error('The returned id_token could not be decoded: ' + err.stack);
+				}
+				return null;
+			};
+
+			let user;
+
+			function getToken(payload) {
+				const objectStorage = Object.keys(sessionStorage);
+
+				for (const object of objectStorage) {
+					if (object == 'ddrumsdk.idtoken') {
+						const idToken = sessionStorage.getItem(object);
+						// console.log('Token Acquired: ', idToken);
+						payload = extractToken(idToken);
+						return payload;
+					} else if (object == 'ddrumsdk.tokenclaims') {
+						payload = JSON.parse(sessionStorage.getItem(object));
+						return payload;
+					} else {
+						console.log();
+					}
+				}
+			}
+			const userDetails = getToken();
+
+			try {
+				// console.log('Decoded Token: ', userDetails);
+				//If token claims are available
+				user = {
+					businessOrg: userDetails.businessOrg,
+					countryCode: userDetails.countryCode,
+					countryDescription: userDetails.countryDescription,
+					jobFamily: userDetails.jobFamily,
+					jobFamilyDescription: userDetails.jobFamilyDescription,
+					jobTitle: userDetails.jobTitle,
+					location: userDetails.location,
+					locationCode: userDetails.locationCode
+				}
+			} catch (e) {
+				//If token claims are not available
+				user = {
+					businessOrg: 'unavailable',
+					countryCode: 'unavailable',
+					countryDescription: 'unavailable',
+					jobFamily: 'unavailable',
+					jobFamilyDescription: 'unavailable',
+					jobTitle: 'unavailable',
+					location: 'unavailable',
+					locationCode: 'unavailable'
+				}
+			}
+
+			// console.log('Token Claims: ', user);
+
+			function uuidv4() {
+				return "xxxx-xx-xx-xx-xxxxxx".replace(/[xy]/g, function (e) {
+					var r = new Uint8Array(1), i = 1 * window.crypto.getRandomValues(r) | 0;
+					return ("x" == e ? i : 3 & i | 8).toString(16)
+				})
+			} "" != dduserid || "" != (dduserid = uuidv4()) && null != dduserid && setCookie("_dduserid", dduserid, 365), DD_RUM.onReady(
+				function () {
+					//Set User
+					DD_RUM.setUser({
+						id: dduserid,
+						businessOrg: user.businessOrg,
+						countryCode: user.countryCode,
+						countryDescription: user.countryDescription,
+						jobFamily: user.jobFamily,
+						jobFamilyDescription: user.jobFamilyDescription,
+						jobTitle: user.jobTitle,
+						location: user.location,
+						locationCode: user.locationCode
+					});
+				}
+			);
+		},
+		getInternalContext: function () {
+			return new Promise(function (resolve, reject) {
+				window.DD_RUM.onReady(function () {
+					resolve(window.DD_RUM.getInternalContext());
+					reject('Something went wrong.');
+				});
+			});
+		},
+
+		addRumGlobalContext: function (key, value) {
+			window.DD_RUM.onReady(function () {
+				window.DD_RUM.addRumGlobalContext(key, value);
+			});
+		},
+
+		addAction: function (key, value) {
+			window.DD_RUM.onReady(function () {
+				window.DD_RUM.addAction(key, value);
+			});
+		}
+	}
+	return lib;
+}
