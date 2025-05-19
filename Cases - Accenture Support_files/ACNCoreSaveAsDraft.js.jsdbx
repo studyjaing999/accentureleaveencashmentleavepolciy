@@ -1,0 +1,527 @@
+angular.module("acnCoreSaveAsDraftApp", ["ACNCoreGlideAjax"]);
+/*
+	Service is just like a script include in ServiceNow.
+	Also, a function parameter must accept $rootScope for Service to work. It is mandatory
+*/
+angular.module('acnCoreSaveAsDraftApp').service('ACNCoreSaveAsDraft', function($rootScope, GlideAjax, $location) {
+
+    var ACNCoreSaveAsDraft = this;
+
+    /*
+    	onLoad setup for copy from request, save as draft and auto save
+    */
+    ACNCoreSaveAsDraft.runOnLoad = function(form) {
+
+        form.setVisible('v_acn_drf_cat_id', false);
+        form.setVisible('v_acn_is_draft_present', false);
+        form.setVisible('v_acn_drf_tag_history', false);
+        form.setVisible('v_acn_auto_save', false);
+        form.setVisible('v_acn_cfr_requested_item', false);
+        form.setVisible('v_acn_cfr_cat_id', false);
+        form.setValue('v_acn_drf_cat_id', form.getUniqueValue());
+        form.setValue('v_acn_cfr_cat_id', form.getUniqueValue());
+
+        console.warn("save as draft result " + ACNCoreSaveAsDraft.getParameterValueTop("sysparm_draft_id"));
+        if (ACNCoreSaveAsDraft.getParameterValueTop("sysparm_draft_id") != false) {
+            form.setValue("v_acn_drf_draft_reference", ACNCoreSaveAsDraft.getParameterValueTop("sysparm_draft_id"));
+            console.warn("Save as draft via parameters ");
+            ACNCoreSaveAsDraft.acn_retrieveDraft("No", form);
+        }
+
+
+        try {
+            var itemGuid = angular.element("#sc_cat_item").scope().data._attachmentGUID;
+            console.log("ItemGuid is " + itemGuid);
+            form.setValue('v_acn_sad_item_guid', itemGuid);
+            form.setVisible('v_acn_sad_item_guid', false);
+        } catch (e) {
+            console.log("item guid is not defined " + e);
+        }
+
+        ////populateTagHistory(); 
+        //checkIfDraftPresent();
+
+        ACNCoreSaveAsDraft.isAutoSave(form);
+    };
+
+
+    ACNCoreSaveAsDraft.getParameterValueTop = function(name) {
+        console.warn("Save As Draft " + JSON.stringify($location.search()));
+        var parametersObj = $location.search();
+        var draftId = parametersObj.sysparm_draft_id;
+        console.warn("Draft Id is " + draftId);
+        if (draftId) {
+            return draftId;
+        }
+        return false;
+        //console.warn("Typeof draftId " +  typeof draftId + " drafId is " + draftId);
+
+        //	return 0;
+        // 	var url = window.top.location.href.parseQuery();
+        // 	if (url[name]) {
+        // 		return decodeURI(url[name]);
+        // 	} else {
+        // 		return 0;
+        // 	}
+    };
+
+    /*
+    	Check if auto save to use or save as draft to use
+    */
+
+    ACNCoreSaveAsDraft.isAutoSave = function(form) {
+        try {
+            var ga = new GlideAjax('acn_saveAsDraft');
+            ga.addParam('sysparm_name', 'isAutoSave');
+            ga.addParam('sysparm_item_id', form.getUniqueValue());
+            ga.addParam('sysparm_table_name', 'sc_cat_item');
+            //ga.addParam('sysparm_user_id', user.getUserID());
+            ga.send().then(function(answer) { // 			var answer = response.responseXML.documentElement.getAttribute("answer");
+                // 			//console.log("Answer = " + answer);
+                // 			answer = JSON.parse(answer);
+                console.log("Answer from GlideAjax " + answer);
+                console.log("Answer from GlideAjax Stringified " + JSON.stringify(answer));
+                try {
+                    if (answer.auto_save == 'false') { // if false, indicates catalog item has subscribed for save as draft
+                        form.setValue('v_acn_auto_save', "No");
+                        form.setValue('v_acn_drf_tag_history', answer.tag_history);
+                    } else {
+                        ACNCoreSaveAsDraft.hideSaveAsDraftFields(form); // hide unwanted fields
+                        form.setValue('v_acn_auto_save', "Yes");
+                        if (answer.previous_draft == true) {
+                            //console.log("retrieving draft");
+                            ACNCoreSaveAsDraft.acn_retrieveDraft('Yes', form); // If previous draft is present for auto saved version, put it on the current form
+                        } else { // if not, directly invoke auto save
+                            ACNCoreSaveAsDraft.enableAutoSave(form); // call this from acn_retrieveDraft() if draft is present, else directly call this function from here.
+                        }
+
+                    }
+                } catch (er) {
+                    console.log("Error in parsing GlideAjax " + er);
+                }
+
+            });
+        } catch (e) {
+            console.log(">>>>>>>>>Debug<<<<<<<<< Error calling function isAutoSave " + e);
+        }
+    };
+
+    // ACNCoreSaveAsDraft.getAutoSaveOrSaveAsDraft = function(response) {
+    // 	var answer = response.responseXML.documentElement.getAttribute("answer");
+    // 	//console.log("Answer = " + answer);
+    // 	answer = JSON.parse(answer);
+    // 	if (answer.auto_save == 'false') { // if false, indicates catalog item has subscribed for save as draft
+    // 		g_form.setValue('v_acn_auto_save', "No"); 
+    // 		g_form.setValue('v_acn_drf_tag_history', answer.tag_history);
+    // 	} 
+    // 	else {
+    // 		hideSaveAsDraftFields(); // hide unwanted fields
+    // 		g_form.setValue('v_acn_auto_save', "Yes");
+    // 		if (answer.previous_draft == true) {
+    // 			//console.log("retrieving draft");
+    // 			acn_retrieveDraft('Yes'); // If previous draft is present for auto saved version, put it on the current form
+    // 		}
+    // 		else { // if not, directly invoke auto save
+    // 			enableAutoSave(); // call this from acn_retrieveDraft() if draft is present, else directly call this function from here.
+    // 		}
+
+    // 	}
+    // }
+
+    ACNCoreSaveAsDraft.enableAutoSave = function(form) {
+        setTimeout(ACNCoreSaveAsDraft.acn_saveAsDraft, 4000, "Yes", 1, form, null);
+        //hideSaveAsDraftFields();
+    };
+
+    ACNCoreSaveAsDraft.hideSaveAsDraftFields = function(form) {
+        form.setVisible('v_acn_drf_tag_name', false);
+        form.setVisible('v_acn_auto_save', false);
+        form.setVisible('v_acn_cfr_requested_item', false);
+        form.setVisible('v_acn_drf_draft_reference', false);
+        form.setVisible('v_acn_retrieve_from', false);
+        form.setVisible('acn_save_as_draft', false);
+        //setTimeout(acn_saveAsDraft, 4000, "Yes" , 0);
+    };
+
+    function checkIfDraftPresent() {
+        try {
+            ga = new GlideAjax('acn_saveAsDraft');
+            ga.addParam('sysparm_name', 'isDraftPresent');
+            ga.addParam('sysparm_user_id', g_user.userID);
+            ga.addParam('sysparm_table', 'sc_cat_item');
+            ga.addParam('sysparm_document_id', gel('sysparm_id').value);
+            ga.getXML(checkResponse);
+        } catch (e) {
+            jslog(">>>>>>>>>Debug<<<<<<<<<  An exception occurred " + e);
+        }
+    }
+
+    function checkResponse(response) {
+        var answer = response.responseXML.documentElement.getAttribute("answer");
+        //jslog(">>>>>>>>>Debug<<<<<<<<< response " + answer);
+        if (answer == 'false') {
+            g_form.setVisible('v_acn_drf_draft_reference', false);
+        }
+    }
+
+    ACNCoreSaveAsDraft.acn_saveAsDraft = function(isAutoSave, parm2, form, previousObject) {
+
+        //console.log(parm2);
+        console.log("<<<<<<<<<<<<<<<<<<<<<<DEBUG>>>>>>>>>>>>>>>>>>>>>>>>>>" + parm2);
+        var vars = [];
+        var fieldName = '';
+        var fieldValue = '';
+        var obj = {};
+        var elm = form.getFieldNames();
+        console.log("fields are " + elm);
+        console.log("Fields" + elm);
+        var allowedVars = 'string,boolean,reference,glide_date,glide_date_time';
+        var tagName = form.getValue('v_acn_drf_tag_name');
+        var tagHistory = form.getValue('v_acn_drf_tag_history');
+        var isComparisonRequired = (previousObject == null || previousObject == undefined) ? false : true;
+        var makeServerTrip = true;
+
+        form.clearMessages();
+
+        if (isAutoSave == 'No') {
+            form.hideFieldMsg('v_acn_drf_tag_name', true);
+
+            if (tagName == '') {
+                form.showFieldMsg('v_acn_drf_tag_name', 'Kindly provide a tag to your draft', 'error');
+                return;
+            }
+
+
+            /*
+            	if tag already exists and selected, then console.log user about overwriting the existing tag 
+            	Else, ask to provide new name for the tag
+            */
+            if (tagHistory.toLowerCase().indexOf(tagName.toLowerCase()) > -1) {
+                var toProceed = confirm("You have selected the existing tag for a draft, click on OK to overwrite the existing draft with selected tag name OR click on cancel and provide a new tag name to create a new Draft");
+                if (!toProceed) {
+                    return;
+                }
+            } else {
+                if (tagHistory == '') {
+                    form.setValue('v_acn_drf_tag_history', tagName);
+                } else {
+                    form.setValue('v_acn_drf_tag_history', tagHistory + ',' + tagName);
+                }
+            }
+
+        }
+
+
+        for (var i = 0; i < elm.length; i++) {
+            try {
+                console.log("Fields" + elm[i]);
+                fieldName = elm[i];
+                //if (allowedVars.indexOf(elm[i].type)> -1 && fieldName.indexOf('null') == -1) {
+                fieldValue = form.getValue(fieldName);
+                obj[fieldName] = fieldValue;
+                //}
+            } catch (e) {
+                console.log(">>>>>>>>>Debug<<<<<<<<<  An exception occurred " + e);
+            }
+        }
+        var obj1 = JSON.stringify(obj);
+        console.log(">>>>>>>>>Debug<<<<<<<<< " + obj1);
+        var guid = '';
+        try {
+            guid = angular.element("#sc_cat_item").scope().data._attachmentGUID;
+        } catch (e) {
+            console.log(">>>>>>>>>Debug<<<<<<<<<  An exception occurred " + e);
+        }
+
+        console.log(">>>>>Debug<<<<<< isComparisonRequired " + isComparisonRequired);
+        console.log(">>>>>Debug<<<<<< if current and previous objects are same ? " + obj1 == previousObject);
+
+        if (isComparisonRequired == false || obj1 != previousObject) {
+            console.log(">>>>>Debug<<<<<< Make server trip " + true);
+            makeServerTrip = true;
+        } else {
+            console.log(">>>>>Debug<<<<<< Make server trip " + false);
+            makeServerTrip = false;
+        }
+
+        if (makeServerTrip == true) {
+
+            var ga = new GlideAjax('acn_saveAsDraft');
+
+            ga.addParam('sysparm_name', 'draftRequest');
+            ga.addParam('sysparm_table', 'sc_cat_item');
+            ga.addParam('sysparm_document_id', form.getUniqueValue());
+            ga.addParam('sysparm_item_guid', guid);
+            ga.addParam('sysparm_acn_json', obj1);
+            ga.addParam('sysparm_tag_name', tagName);
+            ga.addParam('sysparm_auto_save', isAutoSave);
+            ga.addParam('sysparm_auto_save_count', parm2);
+
+            ga.send().then(function(answer) {
+
+                var answerObj = answer;
+                var tagName = form.getValue('v_acn_drf_tag_name');
+                //jslog(">>>>>>>>>Debug<<<<<<<<< is draft processed " + answer);
+                //headerBack(); // redirect your to preivous page
+                //location.reload(false); // reload current form from the browser cache
+                form.clearMessages();
+                //jslog(">>>>>>>>Debug<<<<<<<<<< parseInt(answerObj.autoSaveCount) == 1 " + parseInt(answerObj.autoSaveCount) +  " " +  answerObj.autoSaveCount);
+                console.log(">>>>>>>>Debug<<<<<<<<<< " + answer);
+                if (answerObj.autoSave == "No") {
+					if(form.getUniqueValue() == '84d494421340b600e24d30128144b008') {
+						var clrFlds = form.getEditableFields();
+						for (var i = 1; i<clrFlds.length; i++) {
+							if(clrFlds[i]!='cntSub_project_contact') {
+								form.clearValue(clrFlds[i]);
+							}
+						}
+					}
+                    form.addInfoMessage(" Your request has been saved as draft with reference number " + answerObj.number + " and tag as " + answerObj.tag_name);
+                    //setTimeout(acn_redirectPage,4000);
+                } else {
+                    if (parseInt(answerObj.autoSaveCount) == "1") {
+                        var msg = "Auto save is enabled for this form ";
+                        //new NotificationMessage({ text: msg });
+                        form.addInfoMessage(msg);
+                    }
+                }
+
+            });
+        }
+
+
+        if (isAutoSave == "Yes" && parseInt(parm2) <= 60) {
+            console.log(">>>>>>>>>Debug<<<<<<<<<  " + parm2);
+            setTimeout(ACNCoreSaveAsDraft.acn_saveAsDraft, 10000, "Yes", parseInt(parm2) + 1, form, obj1);
+        }
+    };
+
+    function processDraft(response) {
+        //console.log(parm2);
+        var answer = response.responseXML.documentElement.getAttribute("answer");
+        var answerObj = JSON.parse(answer);
+        var tagName = g_form.getValue('v_acn_drf_tag_name');
+        //jslog(">>>>>>>>>Debug<<<<<<<<< is draft processed " + answer);
+        //headerBack(); // redirect your to preivous page
+        //location.reload(false); // reload current form from the browser cache
+        g_form.clearMessages();
+        //jslog(">>>>>>>>Debug<<<<<<<<<< parseInt(answerObj.autoSaveCount) == 1 " + parseInt(answerObj.autoSaveCount) +  " " +  answerObj.autoSaveCount);
+        jslog(">>>>>>>>Debug<<<<<<<<<< " + answer);
+        if (answerObj.autoSave == "No") {
+            g_form.addInfoMessage(" Your request has been saved as draft with reference number " + answerObj.number + " and tag as " + answerObj.tag_name);
+            setTimeout(acn_redirectPage, 4000);
+        } else {
+            if (parseInt(answerObj.autoSaveCount) == "1") {
+                var msg = "Auto save is enabled for this form ";
+                new NotificationMessage({
+                    text: msg
+                });
+            }
+        }
+
+
+    }
+
+    ACNCoreSaveAsDraft.acn_retrieveDraft = function(autoRetrieve, form) {
+
+        var draftId = '';
+
+        form.clearMessages();
+        form.hideFieldMsg('v_acn_drf_tag_name', true);
+
+        var guid = '';
+        try {
+            guid = angular.element("#sc_cat_item").scope().data._attachmentGUID;
+        } catch (e) {
+            console.log(">>>>>>>>>Debug<<<<<<<<<  An exception occurred " + e);
+        }
+
+        if (autoRetrieve == "No") {
+            draftId = form.getValue('v_acn_drf_draft_reference');
+
+            if (draftId == '') {
+                //g_add(" kindly select draft reference you want to retrive");
+                form.showFieldMsg('v_acn_drf_draft_reference', 'Kindly select the draft reference you want to retrieve', 'error');
+                return;
+            }
+        }
+
+        var ga = new GlideAjax('acn_saveAsDraft');
+
+        ga.addParam('sysparm_name', 'retriveDraft');
+        // 	ga.addParam('sysparm_user_id',g_user.userID);
+        ga.addParam('sysparm_table', 'sc_cat_item');
+        ga.addParam('sysparm_document_id', form.getUniqueValue());
+        ga.addParam('sysparm_item_guid', guid);
+        ga.addParam('sysparm_draft_id', draftId);
+        ga.addParam('sysparm_auto_retrieve', autoRetrieve);
+
+        ga.send().then(function(response) {
+
+            form.clearMessages();
+            form.hideFieldMsg('v_acn_drf_tag_name', true);
+
+            var answer = response;
+            var excludeVars = 'v_acn_drf_tag_name,v_acn_drf_draft_reference';
+            console.log("Response from retrieved draft is " + JSON.stringify(answer));
+            // 		var nameMaps = g_form.nameMap;
+            // 		var allVarsPrettyName = [];
+            // 		var allVarsRealName = [];
+
+            // 		//console.log(answer);
+
+            // 		for ( var i = 0 ; i < nameMaps.length; i++) {
+            // 			allVarsPrettyName.push(nameMaps[i].prettyName);
+            // 			allVarsRealName.push(nameMaps[i].realName);
+            // 		}
+
+            // 		allVarsPrettyName = allVarsPrettyName.join(',');
+            // 		allVarsRealName = allVarsRealName.join(',');
+
+            // 		answer = JSON.parse(answer);
+
+            for (var key in answer) {
+                // 			//g_form.addInfoMessage(key + " " + answer[key]); //Display "Hello"
+                if (excludeVars.indexOf(key) == -1) { // variable excluded from save as draft
+                    form.setValue(key, answer[key]);
+                }
+                // 			//	g_form.addInfoMessage(answer[key]); //Display "World"
+            }
+            var msg = "Your request has been retrieved from saved record";
+            //new NotificationMessage({ text: msg });
+            form.addInfoMessage(msg);
+        });
+
+        if (autoRetrieve == "Yes") {
+            setTimeout(ACNCoreSaveAsDraft.acn_saveAsDraft, 4000, "Yes", 0, form);
+        }
+    };
+
+    function callBackRetriveDraft(response) {
+
+        g_form.clearMessages();
+        g_form.hideFieldMsg('v_acn_drf_tag_name', true);
+
+        var answer = response.responseXML.documentElement.getAttribute("answer");
+        var excludeVars = 'v_acn_drf_tag_name,v_acn_drf_draft_reference';
+        var nameMaps = g_form.nameMap;
+        var allVarsPrettyName = [];
+        var allVarsRealName = [];
+
+        //console.log(answer);
+
+        for (var i = 0; i < nameMaps.length; i++) {
+            allVarsPrettyName.push(nameMaps[i].prettyName);
+            allVarsRealName.push(nameMaps[i].realName);
+        }
+
+        allVarsPrettyName = allVarsPrettyName.join(',');
+        allVarsRealName = allVarsRealName.join(',');
+
+        answer = JSON.parse(answer);
+
+        for (var key in answer) {
+            //g_form.addInfoMessage(key + " " + answer[key]); //Display "Hello"
+            if (excludeVars.indexOf(key) == -1) { // variable excluded from save as draft
+                g_form.setValue(key, answer[key]);
+            }
+            //	g_form.addInfoMessage(answer[key]); //Display "World"
+        }
+        var msg = "Your request has been retrived from save draft version";
+        new NotificationMessage({
+            text: msg
+        });
+    }
+
+    function acn_redirectPage() {
+        try {
+            location.replace(document.referrer);
+        } catch (e) {
+            jslog(">>>>>>>>>Debug<<<<<<<<<  There is an exception on save as draft redirection " + e);
+        }
+    }
+
+    function populateTagHistory() {
+
+        var cat_id = g_form.getParameter('sysparm_id');
+        var ga = new GlideAjax('acn_saveAsDraft');
+        ga.addParam('sysparm_cat_id', cat_id);
+        ga.addParam('sysparm_name', 'retriveTagHistory');
+        ga.getXMLAnswer(getHistoryDetails);
+    }
+
+    function getHistoryDetails(response) {
+        var answer = response;
+        g_form.setValue('v_acn_drf_tag_history', answer);
+    }
+
+    CustomEvent.observe("acncore.save_as_draft.onChange_draft_reference", function(form) {
+        console.log("done " + form.getValue("v_acn_cfr_cat_id"));
+        ACNCoreSaveAsDraft.acn_retrieveDraft("No", form);
+    });
+
+});
+
+angular.module('acnCoreSaveAsDraftApp').service('ACNCoreCopyFromRequest', function($rootScope, GlideAjax) {
+
+    var ACNCoreCopyFromRequest = this;
+
+    ACNCoreCopyFromRequest.test = function(form) {
+        console.log("Coming from copy from request " + form.getUniqueValue());
+    };
+
+    ACNCoreCopyFromRequest.acnCopyFromRequest = function(form) {
+        console.log("Call successfull onChange of copy from existing ");
+        var ritm = form.getValue('v_acn_cfr_requested_item');
+        var cat_id = form.getValue('v_acn_cfr_cat_id');
+        var varNames = [];
+
+        if (ritm == '') {
+            form.addErrorMessage("Kindly select requested item from the lookup box ");
+            return;
+        }
+
+        var elm = form.getFieldNames();
+        console.log('THIS IS A TEST: ' + elm);
+        for (var i = 0; i < elm.length; i++) {
+            if (elm[i] != '') {
+                //jslog(elm[i].fieldName);
+                /*
+                if (varNames == '') {
+                	varNames = elm[i].fieldName.replace('IO:','');
+                }
+                else {
+                	varNames = varNames + ',' + elm[i].fieldName.replace('IO:','');
+                }
+                */
+                varNames.push(elm[i].replace('IO:', ''));
+            }
+        }
+
+        //varNames = varNames.join(',');
+        //varNames = varNames.toString();
+
+        //jslog(" varNames " + varNames);
+        var ga = new GlideAjax('acn_copyFromRequest');
+        ga.addParam('sysparm_name', 'getVarDataOfRitm');
+        ga.addParam('sysparm_ritm', ritm);
+        ga.addParam('sysparm_cat_id', cat_id);
+        ga.addParam('sysparm_vars', varNames);
+        ga.send().then(function(answer) {
+            console.log("Copy from request variable details " + JSON.stringify(answer));
+            for (var key in answer) {
+                try {
+                    //console.log(key +  " " + answerObj[key]);
+                    form.setValue(key, answer[key]);
+                } catch (e) {
+                    console.log("An exception has occurred in copy from request " + e);
+                }
+            }
+        });
+    };
+
+    CustomEvent.observe("acncore.copy_from_request.onChange", function(form) {
+        console.log("done " + form.getValue("v_acn_cfr_cat_id"));
+        ACNCoreCopyFromRequest.acnCopyFromRequest(form);
+    });
+});

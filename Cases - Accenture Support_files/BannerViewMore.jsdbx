@@ -1,0 +1,65 @@
+(function(jq) {
+	jq.fn.bannerViewMore = function(options) {
+		var that = jq(this);
+		var listItems = jq('> li', that);
+		var countListItems = listItems.length;
+		var flyoutLoaded = 0;
+		
+		// on load
+		if (parseInt(countListItems) > 6) {
+			var startTruncate = 7;
+			
+			(jq('> li:not(:has(a))', that).length > 0) && ++startTruncate;
+				
+			for (var i = startTruncate; i < 9; ++i)
+				jq('> li:nth-child(' + i + ')', that).addClass('banner-view-more-action-hidden');
+			
+			that.append(buildHanginMenu).append(buildFlyoutMenu);
+			onLoadBannerViewMore();
+		}
+		
+		jq('.banner-view-more-elipsis').unbind('click', elipisClickHandler);		
+		jq('.banner-view-more-elipsis').bind('click', elipisClickHandler);
+		jq('.banner-view-more-elipsis').unbind('keyup', elipisKeypressHandler);
+		jq('.banner-view-more-elipsis').bind('keyup', elipisKeypressHandler);
+	
+		// event handler
+		function onLoadBannerViewMore() {
+			if (jq('.banner-view-more-flyout-container', that).data('flyout-loaded') == 0) {
+				jq('.banner-view-more-action-hidden', that).clone(true).appendTo('.banner-view-more-flyout-container');
+				jq('.banner-view-more-flyout-container li').removeClass('banner-view-more-action-hidden');
+				jq('ul.acn-action-toolbars li.banner-view-more-action-hidden').remove();
+				jq('.banner-view-more-flyout-container', that).data('flyout-loaded', 1);
+				
+				// unbinds and binds event listener
+				jq('.banner-view-more-flyout-container').unbind('mouseleave', flyoutOnMouseOut);
+				jq('.banner-view-more-flyout-container').bind('mouseleave', flyoutOnMouseOut);				
+			}
+		}
+	
+		function elipisClickHandler(evt) {
+			jq('.banner-view-more-flyout-container').toggleClass('banner-view-more-flyout-container__show');
+		}
+		
+		function elipisKeypressHandler(evt) {
+			if (evt.which == 13 || evt.keyCode == 13)
+				jq('.banner-view-more-flyout-container').hasClass('banner-view-more-flyout-container__show');
+		}
+		
+		function flyoutOnMouseOut(evt) {
+			jq(this).removeClass('banner-view-more-flyout-container__show');
+			jq('.banner-view-more-flyout-container', that).data('flyout-loaded', 0);
+		}
+		
+		/**
+		 * Helpers 
+		 */
+		function buildHanginMenu() {
+			return '<li class="banner-view-more-elipsis" onblur="dropdownFunction()"><a aria-label="Click to view more" tabindex="0" data-microtip-position="top-left" role="tooltip" tabindex="0" href="#"><div class="sr-only dropdown-toggle" tabindex="0" onblur="dropdownFunction()"  data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" aria-label="View More"></div><i class="material-symbols-outlined ma-expandmore" aria-hidden="true">expand_more</i></a></li>';
+		}
+		
+		function buildFlyoutMenu() {
+			return '<li class="banner-view-more-flyout-container" data-flyout-loaded="0"></li>';
+		}
+	};
+})(jQuery);

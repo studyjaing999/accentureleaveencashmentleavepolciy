@@ -1,0 +1,172 @@
+(function(angular, undefined) {
+	
+	angular.module('acn.confirmation.onsubmit', ['acn.confirmation.modal'])
+	.directive('confirmOnsubmit', ['$log', '$timeout', '$parse', '$http', 'AcnConfirmationServiceNoniFrame', function($log, $timeout, $parse, $http, AcnConfirmationServiceNoniFrame) {
+		return {
+			restrict: 'A',
+			//scope: {  actionid: '=' },
+			priority: 0,
+			controller: ['$scope', function($scope) {
+					top.window.isPopupCancel         = false; 
+					top.window.isPopupOk             = false; 
+					$scope.isOpenPopUp                = '';
+					$scope.clickEventName             = '';
+					$scope.mousedownEventName         = '';		
+					$scope.actionid                   = '';	
+					$scope.dialogType                 = '';	
+					$scope.catalogId                  = '';	
+					/*this json object can be generated using an angular service which looks up data from database table or localstorage*/
+					$scope.modalDialogInfo            = {    
+															state         : true, //if state is true then hijack the ng-click function
+															title         : "Default Title" , 
+															bodyText      : "Default Msg",
+															buttonOk      : "OK", 
+															buttonCancel  : "Cancel", 
+															icon          : "glyphicon-alert", 
+															size          : "md" // sizes: "md" or "lg"
+														}; 
+				
+					if ($scope.modalDialogInfo.state) {
+						$scope.openModal = function() { 
+							
+							if( $scope.catalogId != '' &&  $scope.dialogType != '' &&  $scope.actionid != '') {
+								var urlModal = '/api/amspi/acn_sp3_rest_api/getPopupMessage/'+ $scope.catalogId + '/' + $scope.dialogType + '/' + $scope.actionid;
+								getPopupMessage(urlModal);
+							} else {
+								if($scope.clickEventName){ runEvent($scope.clickEventName);   } 
+								if($scope.mousedownEventName){ runEvent($scope.mousedownEventName);   } 
+							}
+							
+						};
+					} 
+				
+					function getPopupMessage(urlModal) {
+							$http({
+								method: 'GET',
+								url:urlModal
+							}).success(function(data, status) {
+								$scope.modalDialogInfo.title = data.result.title;
+								$scope.modalDialogInfo.bodyText = data.result.message;
+								$scope.modalDialogInfo.buttonOk = data.result.buttonOk;
+								$scope.modalDialogInfo.buttonCancel = data.result.buttonCancel;
+								$scope.modalDialogInfo.icon = data.result.icon;
+								$scope.modalDialogInfo.iconSize = data.result.iconSize;
+
+								if(data.result.title) {
+									
+									if(data.result.executeEvent == 'true'){
+										executeEvent();
+									} else {
+										openModal($scope.modalDialogInfo);
+									}
+									
+								} else { // if no pop up message then perform the event
+									if($scope.clickEventName){ runEvent($scope.clickEventName);   } 
+									if($scope.mousedownEventName){ runEvent($scope.mousedownEventName);   } 
+								}
+								
+							}).error(function(error, status){
+								//console.log('portal 3.0 - error: '+ JSON.stringify(error) );
+							});						
+					}
+				
+					function openModal(modalDialogInfo) {
+						AcnConfirmationServiceNoniFrame.openModal(modalDialogInfo).then(function(reason) {
+							if($scope.clickEventName){ runEvent($scope.clickEventName);   } 
+							if($scope.mousedownEventName){ runEvent($scope.mousedownEventName);   } 
+						});							
+					}
+				
+					function runEvent(eventName) {
+						$parse(eventName)($scope);
+					}
+				
+					function executeEvent() {
+						if($scope.clickEventName){ runEvent($scope.clickEventName);   } 
+						if($scope.mousedownEventName){ runEvent($scope.mousedownEventName);   } 
+						
+						
+						setTimeout(function() {
+							$scope.isOpenPopUp  = top.window.isOpenPopUp;
+							checkIfDisplayPopup();
+						},150);
+						
+					}
+				
+					function checkIfDisplayPopup(){
+						var isDisplay = $scope.isOpenPopUp;
+						if(isDisplay) {
+							openModal($scope.modalDialogInfo);
+						}
+					}
+			}],
+			link: function(scope, elem, attr) {
+				if (! scope.modalDialogInfo.state)
+					return;
+				
+				// removes all click events from the element
+				elem.off('click');
+				//removes all mousedown events from the element - for Approval Form
+				elem.off('mousedown');
+				
+				if(attr.ngClick){
+					$timeout(function() { elem.on('click', scope.openModal); } , 150);				   
+				}
+				
+				if(attr.ngMousedown){
+					$timeout(function() { elem.on('mousedown', scope.openModal); } , 150);				   
+				}
+				
+				scope.clickEventName = attr.ngClick;
+				scope.mousedownEventName = attr.ngMousedown;
+				scope.actionid = attr.actionid;
+				scope.dialogType = attr.dialogtype;
+				scope.catalogId = attr.catalogid;
+				
+			}
+		};
+	}]);
+
+	angular.module('acn.confirmation.modal', [])
+	.service('AcnConfirmationServiceNoniFrame', ['$uibModal', function($uibModal) {
+		var result = null;
+		var openModal = function(dlgConfig) {
+			return $uibModal.open({
+				animation: true,
+				templateUrl: 'acnPortalConfirmationModalNoniFrame.html',
+				controller: function($scope, $uibModalInstance) {
+					$scope.msg    = dlgConfig.bodyText || 'Are you sure?';
+					$scope.options   = {
+							title        : dlgConfig.title        || 'No Title',
+							okButton     : dlgConfig.buttonOk     || '',
+							cancelButton : dlgConfig.buttonCancel || '',
+							modalSize    : dlgConfig.size         || 'lg', 
+							icon         : dlgConfig.icon         || 'glyphicon-exclamation-sign'
+						};
+						$scope.msg       = dlgConfig.bodyText     || 'Are you sure?';
+						$scope.cancel    = function () {$uibModalInstance.dismiss('cancel'); top.window.isPopupCancel = true; };
+						$scope.ok       = function () {$uibModalInstance.close('ok'); top.window.isPopupOk  = true;};
+				},
+				size: dlgConfig.size
+			}).result;
+		};
+		var getResult  = function() {return result;};
+		var setResult  = function(newVal) {result = newVal;};
+		this.openModal = openModal;
+		this.getResult = getResult;
+	}])
+	.run(['$templateCache', function($templateCache) {
+		$templateCache.put('acnPortalConfirmationModalNoniFrame.html', 
+			'<div class="modal-header acn-popup-config">' +
+				'' +'<h4 class="modal-title"><span class="glyphicon {{options.icon}}"></span> {{ options.title }}</h4>' +
+				' <button type="button" class="glyphicon glyphicon-remove"  ng-click="cancel()" data-dismiss="modal" aria-label="Close" title="Close"></button>' + 
+			'</div>' +
+			'<div class="modal-body acn-popup-config">' +
+				'<div ng-bind-html="msg | limitTo:1550"> </div>' +
+			'</div>' +
+			'<div class="modal-footer acn-session-timeout">' +
+			   '<button  ng-if= "options.cancelButton" id="counter-cancel-button" class="btn acn-btn-default" type="button" ng-click="cancel()" style="font-family: graphik-regular;">{{ options.cancelButton }}</button>' +
+				'<button ng-if="options.okButton" id="counter-ok-button" class="btn btn-primary" type="button" ng-click="ok()">{{ options.okButton }}</button>' +
+			'</div>');
+	}]);
+})(window.angular);

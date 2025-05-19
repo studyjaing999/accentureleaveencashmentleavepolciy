@@ -1,0 +1,434 @@
+/**
+ * Checks for user session
+ *  
+ * @author Support portal team
+ * @since Wednesday, March 25, 2020
+ * @revised Thursday, May 13, 2021
+ * @version 1.1.0
+ */ 
+	(function(angular, window, docmnt, jq, undefined) {
+		
+	angular.module('acn.session.timeout', [])
+		.directive('acnSessionTimeout', ['$log', 'SessionService', '$window', '$location', 'BaseUrl', '$interval', 'SessionTimeoutFactory', '$timeout', function($log, SessionService, $window, $location, BaseUrl, $interval, SessionTimeoutFactory, $timeout) {
+			return {
+				restrict: 'A',
+				scope: {
+					acnSessionTimeout: '@' 
+				},
+				controller: function($scope) {
+					var sessionTimeoutConfig = $scope.acnSessionTimeout;
+					var endpointInterval;
+					
+					if ( (getValue(sessionTimeoutConfig, 1) == 'true')  && (shouldUseSessionTimeout(getValue(sessionTimeoutConfig, 3))(getCurrentPortalName())) ) {
+				/*
+					if ((getValue(sessionTimeoutConfig, 1) == 'true') &&
+					(shouldUseSessionTimeout(getValue(sessionTimeoutConfig, 3))(getCurrentPortalName())) &&
+						(getValue(sessionTimeoutConfig, 2) == 'ads.kvallejos')) {  //debugging purposes 
+				*/	
+						// SessionService.getGlideUISessionTimeout().then(function(response) {
+							var uiTimeout = getValue(sessionTimeoutConfig, 0);
+							var inMinutesTimeout = (uiTimeout - 5) * 60 * 1000;
+							SessionTimeoutFactory.start(inMinutesTimeout);
+						// });
+					
+						endpointInterval = $interval(function() {
+							SessionService.getGlideUISessionTimeout().then(function(response) {
+								if (response.hasOwnProperty('error'))
+									$interval.cancel(endpointInterval);
+							}, function() {
+								$interval.cancel(endpointInterval);
+							});
+						}, frequency()); // 25 min interval connect to sNow DB. to retain session
+					}
+					
+					function getValue(data, key) {
+						var arrData = data.split('|');
+						return arrData[key];
+					}
+					
+					function frequency() {
+						var sessionTimeoutSetting = getValue(sessionTimeoutConfig, 0);
+						var buffTime = 5;
+						if (sessionTimeoutSetting <= buffTime)
+							buffTime = 1;
+						if (sessionTimeoutSetting < 1)
+							return 1000 * 60;
+						return 1000 * 60 * (sessionTimeoutSetting - buffTime);
+					}
+					
+					function getCurrentPortalName() {
+						var topUrl = $window.location.href;
+						var portalName = topUrl.split("/")[3].split("?")[0].trim();
+						
+						var regxPortalName = portalName.match(/[\w]+(?=#)/);
+						if (regxPortalName && Array.isArray(regxPortalName))
+							return regxPortalName[0];
+						
+						return portalName;
+						
+					}
+					
+					function shouldUseSessionTimeout(listOfPortals) {
+						return function(portal) {
+							var regex = new RegExp((''.concat('\\b', portal, '\\b')).toString(), 'gi');
+							return regex.test(listOfPortals);
+						};
+					}
+					
+				}
+			};
+		}]) 
+		.factory('SessionTimeoutFactory', ['AcnConfirmationService', 'BaseUrl', '$window', '$timeout', function(AcnConfirmationService, BaseUrl, $window, $timeout) {
+			var _start = function(idleTime) {
+				window.ACNPORTAL = {};
+				window.ACNPORTAL.time; // setTimeout ID
+				window.ACNPORTAL.timerId;
+				window.ACNPORTAL.modal;
+				
+				resetTimer();
+				
+				window.onstorage = function(evt) {
+					//console.log('newValue, localStorage: ', evt.newValue);
+// 					if (isIE())
+// 						console.log('This call is IE');
+					
+					if (evt.newValue == 'relogin')
+						relogin();
+					
+					if (hasSessionTimeoutValue(evt.newValue))
+						resetTimer();
+				};
+
+				var deboucedMouseMove = debounce(sayMouseMoving, 500);
+				var debouncedKeyPress = debounce(sayKeypressing, 500);
+
+				docmnt.addEventListener('keypress', debounceKeyboardHandler);
+				docmnt.addEventListener('mousemove', debounceMouseMoveHandler);
+
+				window.ACNPORTAL.debounceMouseMoveHandler = debounceMouseMoveHandler;
+				window.ACNPORTAL.debounceKeyboardHandler = debounceKeyboardHandler;
+				
+				function hasSessionTimeoutValue(hay) {
+					var pattern = /^session-timeout*/i;
+					return pattern.test(hay);
+				}
+
+				function debounceMouseMoveHandler() {
+					deboucedMouseMove();
+				}
+
+				function debounceKeyboardHandler() {
+					debouncedKeyPress();
+				}
+
+				function sayMouseMoving() {
+					var msg = 'Moving my mouse.... ' + getTimestamp();
+					localStorage.setItem('session', msg);
+// 					console.log("MESSAGE:    " + msg);
+					if (! isIE())
+						resetTimer();
+				}
+
+				function sayKeypressing() {
+					var msg = 'Pressing keys session-timeout' + getTimestamp();
+					localStorage.setItem('session', msg);
+// 					console.log("MESSAGE:    " + msg);
+					if (! isIE())
+						resetTimer();
+				}
+
+				function isIE() {
+					var isIE = /*@cc_on!@*/false || !!docmnt.documentMode;
+					return isIE;
+				}
+
+				function resetTimer() {
+					if (window.ACNPORTAL.modal)
+						window.ACNPORTAL.modal.close();
+					
+					clearTimeout(window.ACNPORTAL.time); // @todo: important
+					window.ACNPORTAL.time = setTimeout(logout, idleTime); // @todo: important
+				}
+				
+				function relogin() {
+					clearInterval(window.ACNPORTAL.timerId);
+					clearTimeout(window.ACNPORTAL.time);
+					$timeout(function() {
+						$window.location.href = BaseUrl;
+					}, 3000);
+				}
+
+				function logout() {
+					window.ACNPORTAL.modal = AcnConfirmationService.openModal();
+				}
+
+				function onLoadSetLocalStorage() {
+					var msg = 'session-timeout' + getTimestamp();
+					localStorage.setItem('session', msg);
+				}
+
+				function getTimestamp() {
+					var timestamp = new Date();
+					var h = addZero(timestamp.getUTCHours(), 2);
+					var m = addZero(timestamp.getUTCMinutes(), 2);
+					var s = addZero(timestamp.getUTCSeconds(), 2);
+					var ms = addZero(timestamp.getUTCMilliseconds(), 2);
+
+					return  h + ':' + m + ':' + s + ':' + ms;
+				}
+
+				function addZero(x,n) {
+					while (x.toString().length < n) {
+						x = "0" + x;
+					}
+					return x;
+				}
+
+				function debounce(fn, wait) {
+					var timeout;
+
+					var debounced = function() {
+						var args = arguments;
+						var context = this;
+
+						function later() {
+							fn.call(context, args);
+						}
+
+						if (timeout)
+							clearTimeout(timeout);
+
+						timeout = setTimeout(later, wait);		
+					};
+
+					return debounced;	
+				}
+				
+				window.onload = resetTimer;
+				onLoadSetLocalStorage(); // hacks for IE & Edge only
+				
+			};
+			
+			return {
+				start: _start
+			};
+		}])
+		.service('AcnConfirmationService', ['$uibModal', '$log', function($uibModal, $log) {
+			var result    = null;
+			var dlgConfig = {
+				title        : 'Your session is about to expire.',
+				buttonOk     : 'Stay signed in',
+				buttonCancel : 'Log-off',
+				buttonLogin  : 'Login'
+			};
+			var openModal = function(size) {
+				return $uibModal.open({
+					animation: true,
+					size: 'md',
+					keyboard: false,
+					backdrop: 'static',
+					windowTopClass: 'session-timeout-modal',
+					templateUrl: 'acnPortalConfirmationModal.html',
+					controller: function($scope, $uibModalInstance, $log, $rootScope, $window, $timeout, BaseUrl, Logout) {
+						var tmp;
+						$scope.options   = {
+							title        : dlgConfig.title        || 'No Title',
+							okButton     : dlgConfig.buttonOk     || 'Yes',
+							cancelButton : dlgConfig.buttonCancel || 'No',
+							loginButton : dlgConfig.buttonLogin || 'Login',
+						};
+						$scope.msg       = dlgConfig.bodyText     || 'Are you sure?';
+						$scope.ok        = btnOk;
+						$scope.cancel    = btnCancel;
+						$scope.login     = btnLogin;
+						$scope.counter;
+						$scope.close = function() {
+							$uibModalInstance.close('Closing modal');
+						};
+						
+						function getPercentage(timeBox, counter) {
+							var upperBound =  timeBox * 60;
+							return Math.round((counter/upperBound) * 100);
+						}
+
+						function toString(min, sec) {
+							var minutes;
+							var seconds;
+							var output = '';
+ 
+							if (min > 0)
+								output += min + collective(min, ' minute', ' minutes');
+
+							if (sec > 0)
+								output += ' ' + sec + collective(sec, ' second', ' seconds');
+
+							return output;
+						}
+
+						function collective(count, singular, plural) {
+							if (count < 1)
+								throw new Exception('Invalid collective nouns');
+
+							return (count < 2) ? singular : plural;
+						}
+						
+						$uibModalInstance.opened.then(function() {
+							clearInterval(window.ACNPORTAL.timerId);
+							clearTimeout(window.ACNPORTAL.time);
+							docmnt.removeEventListener('keypress', window.ACNPORTAL.debounceKeyboardHandler);
+							docmnt.removeEventListener('mousemove', window.ACNPORTAL.debounceMouseMoveHandler);
+							
+							var timerBound = 5;
+							var targetTime = new Date();
+							// add minutes
+							targetTime.setMinutes(targetTime.getMinutes() + timerBound);
+
+							window.ACNPORTAL.timerId = setInterval(function() {
+								var now = new Date().getTime();
+								var elapsed = targetTime - now;
+
+								var hours = Math.floor((elapsed % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));	
+								var minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+								var seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
+								var omnibusTimer =  (minutes * 60) + seconds;
+								var percentage = getPercentage(timerBound, omnibusTimer);
+								var pageTitle = angular.element(document).prop('title');
+								var ariaLabel = 'Modal session timeout is displayed in ' + pageTitle + ' Page ' + $scope.options.title;
+
+								
+								jq('#panelmsg').html((omnibusTimer == 0) ? 'Your session has expired!' : toString(minutes, seconds ));
+								jq('.progress-bar').prop('style', 'width: ' + getPercentage(timerBound, omnibusTimer) + '%');
+								jq('.modal-title').attr('aria-label' , ariaLabel);								
+
+								if (percentage < 0){
+									percentage = 0;
+								}
+
+								jq('.progress-bar').attr('aria-label', 'Countdown progress: ' + percentage + '%');
+								
+								if (getPercentage(timerBound, omnibusTimer) < 30) {
+									jq('.progress-bar').css('background-color', '#d9534f');
+								}
+
+								if (omnibusTimer < 1) {
+									$scope.options.title = 'Session expired.';
+									$scope.$digest();
+									jq("#primary-msg").html('');
+									jq("#counter-login-button").css('display', 'inline-flex');
+									jq("#counter-cancel-button").css('display', 'none');
+									jq("#counter-ok-button").css('display', 'none');
+									clearInterval(window.ACNPORTAL.timerId);
+									clearTimeout(window.ACNPORTAL.time);
+								}
+							}, 1000);
+							
+			
+						});
+						
+						$uibModalInstance.closed.then(function() {
+							clearInterval(window.ACNPORTAL.timerId);
+							clearTimeout(window.ACNPORTAL.time);
+							docmnt.addEventListener('keypress', window.ACNPORTAL.debounceKeyboardHandler);
+							docmnt.addEventListener('mousemove', window.ACNPORTAL.debounceMouseMoveHandler);
+						
+							var event;
+							if (typeof(Event) === 'function') {
+								event = new Event('keypress');
+							} else {
+								event = docmnt.createEvent('Event');
+								event.initEvent('keypress', true, true);
+							}
+							docmnt.dispatchEvent(event);
+						});
+						
+						
+						/**
+						 * Utilities/Helpers
+						 */
+						function btnOk() {
+							$uibModalInstance.close('Closing modal');
+							clearInterval(window.ACNPORTAL.timerId);
+							clearTimeout(window.ACNPORTAL.time);
+						}
+						function btnCancel() {
+							$uibModalInstance.dismiss('Closing modal');
+							localStorage.setItem('session', 'relogin');
+							$window.location.href = Logout; 
+						}
+						function btnLogin() {
+							$uibModalInstance.dismiss('Closing modal');
+							localStorage.setItem('session', 'relogin');
+							//$window.location.href = BaseUrl; 
+							$window.location.href = location.href;
+							
+						}
+					}
+				});
+			};
+
+			var getResult  = function() {return result;};
+			var setResult  = function(newVal) {result = newVal;};
+			this.openModal = openModal;
+			this.getResult = getResult;
+
+			
+		}])
+		.run(['$templateCache', function($templateCache) {
+			$templateCache.put('acnPortalConfirmationModal.html', 
+				'<div class="modal-header acn-session-timeout"  style="background: linear-gradient(to right, #7500c0 0%, #000088 100%); color: #fff; font-family:graphik-semibold; font-size: 18px; border-bottom: none; padding: 24px;">'+ 
+            ''  +
+				'<h4 class="modal-title" aria-label=""><span class="material-symbols-outlined" aria-hidden="true" style="color:#A100FF; right:1px; top:1px;">av_timer</span> {{ options.title }}</h4>' +
+			'</div>' +
+			'<div class="modal-body acn-session-timeout">' +
+            '<div style="text-align:center; color:#333;"><p id="primary-msg" class="warning-msg" style="font-family: graphik-regular; color:#1D1823;">You have been inactive for a while.<br\/>For your security, we\'ll automatically sign you out in:</p>' +
+				'<p id="panelmsg" style="font-family:graphik-bold">Calculating session timeout</p></div>' +
+				'<div id="counter-progressbar" class="progress" style="margin-bottom: 0px; margin-top:10px; padding-right:24px; padding-left:1px;"> <div class="progress-bar progress-bar-primary" role="progressbar" aria-label="100%" aria-valuemin="0" aria-valuemax="100" style="width:100%;"> <span class="sr-only">100% Complete (danger)</span> </div> </div>' +
+			'</div>' +
+			'<div class="modal-footer acn-session-timeout" style="border-top: none">' +
+			   '<button id="counter-cancel-button" class="btn acn-btn-default" type="button" ng-click="cancel()" style="font-family: graphik-semibold;">{{ options.cancelButton }}</button>' +
+				'<button id="counter-ok-button" class="btn btn-primary" type="button" ng-click="ok()">{{ options.okButton }}</button>' +
+			   '<button id="counter-login-button" class="btn btn-primary" type="button" ng-click="login()" style="font-family: graphik-semibold; display: none; ">{{ options.loginButton }}</button>' +
+			'</div>');
+		}])
+		.service('SessionService', ['$http', '$q', '$httpParamSerializer', '$log', function($http, $q, $httpParamSerializer, $log ) {
+			var _getGlideUISessionTimeout = function() {
+				var deferred = $q.defer();
+				var promise = deferred.promise;
+				var req = {
+					method: 'GET',
+					url: 'api/amspi/acn_sp3_rest_api/glideuisessiontimeout',
+						headers: {
+							'Content-Type': 'application/json'
+						}
+				}; 
+				$http(req).then(function(data) {
+					if(data)
+						deferred.resolve(data);
+					else
+						deferred.reject('GlideUISessionTimeout Error');
+				}, function(error) {
+					deferred.reject(error);
+				});
+				promise.success = function(fn) {
+					promise.then(fn);
+					return promise;
+				};
+				promise.error = function(fn) {
+					promise.then(null, fn);
+					return promise;
+				};
+
+				return promise;
+			};
+			
+			this.getGlideUISessionTimeout = _getGlideUISessionTimeout;
+		}])
+		.value('Logout', function() {
+			return ''.concat(location.protocol, '//', location.host, '/logout.do?sysparm_goto_url=/support_portal');
+		}())
+		.value('BaseUrl', function() {
+			return ''.concat(location.protocol, '//', location.host, '/support_portal');
+		}());
+			
+		
+})(window.angular, window, document, jQuery);

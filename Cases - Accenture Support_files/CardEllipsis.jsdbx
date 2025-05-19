@@ -1,0 +1,69 @@
+(function($, exprts, undefined) {
+	function resizeCard() {
+		var result = [];
+		$('.caption__description').each(function() {
+			var $this = $(this);
+			
+			function isDescClipped(el) {
+				var parentContainer = el.parent();
+				var parentTotalHeight = Math.ceil(parentContainer.offset().top + parentContainer.innerHeight());
+				var elTop = el.offset().top;
+				var elHeight = el.innerHeight();
+				var elWidth = el.innerWidth();
+				var descTotalHeight = Math.ceil(elTop + elHeight);
+				var difference = (parentTotalHeight - descTotalHeight);
+
+				if ((difference < 10))
+					return true;
+				return false;
+			}
+
+			function truncate(word) {
+				var lastspace = word.lastIndexOf(' ');
+				if ( lastspace != -1) 
+					return word.substr(0, lastspace);
+
+				return word;
+			}
+
+			function smartTruncate(el) {
+				el.html(el.attr('title').toString().replace(/[\.]{3}}$/, ''));
+				el.html(el.html().toString().trim());
+
+				while (isDescClipped(el)) {
+					var phrase = truncate(el.html());
+					el.html(phrase);
+				}
+				
+				if (el.attr('title').length > el.html().length)
+					el.append('...');
+			}
+			smartTruncate($this);
+		});	
+		
+		return result;
+	}
+	
+	function debounce(fn, wait) {
+		var timeout;
+
+		var debounced = function() {
+			var args = arguments;
+			var context = this;
+
+			function later() {
+				fn.call(context, args);
+			}
+
+			if (timeout)
+				clearTimeout(timeout);
+
+			timeout = setTimeout(later, wait);		
+		};
+
+		return debounced;	
+	}
+	exprts.ACN = {};
+	exprts.ACN.resizeCard = resizeCard;
+	exprts.ACN.debounce = debounce;
+})(jQuery, window);

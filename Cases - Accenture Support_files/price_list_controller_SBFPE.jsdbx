@@ -1,0 +1,316 @@
+	var myApp = angular.module('priceListMod', ['angular.filter','sn.glideAjax']);
+
+	myApp.controller('PriceListCtrl',function($scope,$filter,GlideAjax,$window) {
+		
+		//$scope.selectedGeo=''; 
+		$scope.selected_offering='';
+		$scope.offeringList=[];
+		$scope.toggleImage="images/filter_hide16.gifx";
+		$scope.selectedCountry=[];
+		$scope.geoList_temp='';
+		$scope.geoList='';
+		$scope.targetOffering=[];
+		
+		
+		//$scope.userGeo='';
+		//$scope.userCountry='';
+		$scope.disabledFlag=[];
+		$scope.disabledFlagV2=false;
+		$scope.CountryTemp="";
+		
+		$scope.userGeo      = $window.sessionStorage.getItem("DEFAULT_USER_GEO");
+		$scope.selectedGeo  = $window.sessionStorage.getItem("DEFAULT_USER_GEO");
+		$scope.userCountry  = $window.sessionStorage.getItem("DEFAULT_USER_COUNTRY");
+		 $scope.toggle = true;
+		
+		$scope.$watch('toggle', function(){
+			$scope.toggleImage = $scope.toggle ? 'images/filter_hide16.gifx' : 'images/filter_reveal16.gifx';
+		});
+		$scope.getUserData=function(){
+			
+			var ga = new GlideAjax('ITServicesPriceListUtil');
+				ga.addParam('sysparm_name', 'getUserDetail');
+				ga.getJSON(function(response) {
+				
+				if (!response)
+					return;
+					
+					$scope.userGeo=response[0].geo;
+					$scope.userCountry=response[0].country;
+					$scope.selectedGeo=response[0].geo;
+					
+					if($scope.userGeo == 'ANZK'){
+						$scope.userGeo = 'ANZ';
+						$scope.selectedGeo = 'ANZ';
+					}
+					
+					if($scope.userGeo == 'Austria, Switz, Grmy' || $scope.userGeo == 'MART' || $scope.userGeo == 'MRT'){
+						$scope.userGeo = 'ASGR';
+						$scope.selectedGeo = 'ASGR';
+					}
+					
+					if($scope.userGeo == 'UK, Ireland'){
+						$scope.userGeo = 'UKI';
+						$scope.selectedGeo = 'UKI';
+					}
+					
+					if($scope.userCountry == 'Latvia'){
+						$scope.userCountry = 'default';
+					}
+					
+					if($scope.userCountry == 'Austria' || $scope.userCountry == 'Switzerland' || $scope.userCountry == 'Germany' ){
+						$scope.userCountry = 'Austria, Switzerland, Germany';
+					}
+					
+					
+					if($scope.userCountry == 'France' || $scope.userCountry == 'Belgium' || $scope.userCountry == 'Luxembourg' || $scope.userCountry == 'Netherlands'){
+						$scope.userCountry = 'France, Belgium, Luxembourg, Netherlands';
+					}
+					
+					if($window.sessionStorage.getItem("DEFAULT_USER_GEO")=="" || $window.sessionStorage.getItem("DEFAULT_USER_GEO")==null)
+						window.sessionStorage.setItem("DEFAULT_USER_GEO",response[0].geo);
+			
+					
+					if($window.sessionStorage.getItem("DEFAULT_USER_COUNTRY")=="" || $window.sessionStorage.getItem("DEFAULT_USER_COUNTRY")==null)
+						$window.sessionStorage.setItem("DEFAULT_USER_COUNTRY",response[0].country);
+			
+					
+				 });	
+		};
+		$scope.getUserData();
+		
+		$scope.searchCost = function (myArray,offering,geo,country){
+			
+			var geoCountryFlag = false;
+			
+			if(geo == 'Japan' || geo == 'Greater China' || geo == 'India' || geo == 'Canada' || geo == 'United States'){
+				geoCountryFlag = true;
+			}
+			
+			if(country == 'Austria' || country == 'Switzerland' || country == 'Germany'){
+				country = 'Austria, Switzerland, Germany';
+			}
+			
+			if(country == 'France' || country == 'Belgium' || country == 'Luxembourg' || country == 'Netherlands'){
+				country = 'France, Belgium, Luxembourg, Netherlands';
+			}
+			
+			for (var i=0; i < myArray.length; i++) {
+				
+				if(geoCountryFlag){
+					
+					if (myArray[i].u_offering === offering && myArray[i].u_geo_unit == geo) {
+						return myArray[i].u_cost;
+					}
+				}
+				else{
+					
+					if (myArray[i].u_offering === offering && myArray[i].u_geo_unit == geo && myArray[i].u_country == country) {
+							//$window.alert('myArray[i].u_country: ' + myArray[i].u_country + ' myArray[i].u_cost: ' + myArray[i].u_cost);
+						return myArray[i].u_cost;
+					}
+				}
+				
+				
+				
+				
+			}
+			
+				
+		
+			
+		}
+
+		//not in use...
+		$scope.getPriceDetails=function(row,selCtry,offering){
+			 //console.log("DATA 1 : "+JSON.stringify(row));
+			 //console.log("DATA 2 : "+JSON.stringify(selCtry));
+			 //console.log("DATA 3 :"+offering);
+			 angular.forEach($scope.PriceListTableData, function(p) {
+			
+			 if (p.u_number == selCtry.u_number) {
+				 selCtry.u_cost = p.u_cost;              
+				  
+				}
+			});
+		};
+		
+		$scope.loadPriceList=function(value){
+		
+			var ga = new GlideAjax('ITServicesPriceListUtil');
+				ga.addParam('sysparm_name', 'getList');
+				ga.addParam('sysparam_serviceOffering',value);
+				ga.getJSON(function(response) {
+					if (!response)
+						return;
+					$scope.PriceListTableData = response;
+					//$scope.CountryTemp = response;
+				 }
+				);
+		};
+		//get the offering name from <span>
+		$scope.initGetOffering = function(value) {
+			
+			$scope.targetOffering.push(value.toString());
+			$scope.geoList = $filter('filter')($scope.geoList_temp, {u_offering:value});
+			$scope.selected_offering=value;
+			$scope.offeringList.push(value);
+			
+
+		};
+		$scope.resetCountry=function(flag,geo){
+			jslog("Test : "+geo);
+			$scope.selectedCountry[flag]="";
+			
+				 jslog("LOG : "+$scope.userCountry+' | '+$scope.selected_offering+' | '+$scope.offeringList[flag]);
+		
+				//When country is null set price
+				angular.forEach($scope.PriceListTableData, function(value,key) {
+				
+				if(geo !=''){
+				
+					if((value.u_country=='')&& value.u_geo_unit==geo && value.u_offering==$scope.offeringList[flag]){
+							$scope.selectedCountry[flag]=value.u_cost;
+							$scope.disabledFlag[flag]=true;
+
+					 }
+					else if((value.u_country!='')&& value.u_geo_unit==geo && value.u_offering==$scope.offeringList[flag]){
+						   $scope.disabledFlag[flag]=false;
+					}
+				}else
+					$scope.disabledFlag[flag]=true;
+			
+					
+			
+					 
+			 });
+				
+		};
+		
+		
+		$scope.resetCountryV2 = function(myArray,offering,geo){
+			var countryArr = [];
+			
+			for (var i=0; i < myArray.length; i++) {
+				if (myArray[i].u_offering === offering && myArray[i].u_geo_unit == geo && myArray[i].u_country !='') {
+					
+					countryArr.push(myArray[i].u_country);
+				}
+			}
+
+			try{
+			if(countryArr.length == 0){
+				$scope.userCountry = '';	
+				if(geo == 'Greater China'){
+					isSpecialCountry('China');
+				}
+				else if (geo == 'India'){
+					isSpecialCountry('India');
+				}
+				else if (geo == 'Japan'){
+					isSpecialCountry('Japan');
+				}
+				else if(geo == 'Canada'){
+					isSpecialCountry('Canada');
+				}
+				else if(geo == 'United States'){
+					isSpecialCountry('USA');	
+				}
+				else if(geo == ''){
+					$scope.userCountry = 'default';
+				}
+			}
+			else{
+				
+				$scope.userCountry = 'default';
+				
+			}
+			}
+			catch (Exception){
+				jslog("Catch : "+Exception);
+			}
+			
+			
+		}
+		
+		$scope.setDefaultCountry = function(r_country, user_country){
+			if(r_country.indexOf(user_country)){
+				return true;
+			
+			}
+			else if(r_country == user_country){
+				return true;
+			}
+			
+		}
+		
+		$scope.isDisabled = function (myArray,offering,geo){
+			if(geo == 'ANZK'){
+				geo = 'ANZ';
+			}
+			if(geo == 'Austria, Switz, Grmy' || geo == 'MART' || geo == 'MRT'){
+				geo = 'ASGR';
+			}
+			if(geo == 'UK, Ireland'){
+				geo = 'UKI';
+			}
+			
+			var countryArr = [];
+			
+			for (var i=0; i < myArray.length; i++) {
+				if (myArray[i].u_offering === offering && myArray[i].u_geo_unit == geo && myArray[i].u_country != '') {
+					countryArr.push(myArray[i].u_country);
+				}
+			}
+
+			
+			if(countryArr.length == 0){
+				return true;
+			}
+			
+			
+		}
+		
+		$scope.countryDepedency = function (country){
+			
+			isSpecialCountry(country);
+			
+		}
+		
+		
+		
+		//set default value for cost base on the user geo and country
+		$scope.setDefaultValue=function(geo,offering,country,flag){
+		   
+			jslog('PRICELIST_DATA :'+$scope.PriceListTableData.length);
+			  jslog("OUTSIDE LOOP VALUE : "+flag+'| '+''+country+' | '+geo+' | '+offering);
+			 jslog("USER GEO : "+$window.sessionStorage.getItem("DEFAULT_USER_GEO"));
+			//FIXED UAT
+			if(country=='')
+				country=    $window.sessionStorage.getItem("DEFAULT_USER_COUNTRY");
+			if(geo=='')
+				geo= $window.sessionStorage.getItem("DEFAULT_USER_GEO");
+				
+			jslog(" Country|Geo : "+ $scope.userCountry+' | '+$scope.userGeo);
+			 angular.forEach($scope.PriceListTableData, function(value,key) {
+			 jslog("PRICE LIST : ");
+				 if(value.u_country==country && value.u_geo_unit==geo && value.u_offering==offering){
+						$scope.selectedCountry[flag]=value.u_cost;
+						$scope.disabledFlag[flag]=false;
+					  jslog("Value : "+flag+'| '+''+country+' | '+geo+' | '+offering);
+					
+				 }
+				 if((value.u_country=='')&& value.u_geo_unit==geo && value.u_offering==offering){
+						$scope.selectedCountry[flag]=value.u_cost;
+						$scope.disabledFlag[flag]=true;
+						jslog("Value : "+flag);
+					 
+					   
+				 }
+			
+					 
+			 });
+			
+		};
+		
+	  });

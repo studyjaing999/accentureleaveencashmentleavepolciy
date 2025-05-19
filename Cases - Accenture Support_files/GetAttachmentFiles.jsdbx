@@ -1,0 +1,10 @@
+function getSCAttachmentFiles() {
+	
+	var files;
+	try {
+		files = angular.element("#sc_cat_item").scope().attachments;
+	} catch(e) {
+		files = '';
+	}
+	return files;
+}

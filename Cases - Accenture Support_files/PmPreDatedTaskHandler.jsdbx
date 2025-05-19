@@ -1,0 +1,48 @@
+(function() {
+
+    function showConfirmDialogIfRequired(tableName, taskId, newTaskStartDate, doConfirm, doCancel, gMessage, gmodal) {
+        var ga = new GlideAjax('AjaxProjectTaskUtil');
+        ga.addParam('sysparm_name', 'isTaskPredated');
+        ga.addParam('task_id', taskId);
+        ga.addParam('table_name', tableName);
+        ga.addParam('task_start_date', newTaskStartDate);
+        ga.getXMLAnswer(callBackForConfirmDialog);
+
+        function callBackForConfirmDialog(response) {
+            var isPredated = parseFloat(response) < 0;
+            if (isPredated) {
+                if (typeof gmodal == "undefined") {
+                    var dialogClass = window.GlideModal ? GlideModal : GlideDialogWindow;
+                    var dialog = new dialogClass('glide_confirm_standard');
+                    dialog.setTitle(getMessage('Move date'));
+                    dialog.setPreference('warning', true);
+                    dialog.setPreference('title', getMessage("Project start date will be moved prior to existing start date. Do you want to proceed?"));
+                    dialog.setPreference('onPromptComplete', doConfirm);
+                    dialog.setPreference('onPromptCancel', doCancel);
+                    dialog.on('closeconfirm', doCancel);
+                    dialog.render();
+                } else {
+                    gmodal.confirm("Move date", "Project start date will be moved prior to existing start date. Do you want to proceed?").then(function onSuccess() {
+                        doConfirm();
+                    }, function onReject() {
+                        doCancel();
+                    });
+                }
+            } else
+                doConfirm();
+        }
+    }
+
+    function createGlobals() {
+        if (this instanceof Window) {
+            this.PmPreDatedTaskHandler = {};
+            this.PmPreDatedTaskHandler.showConfirmDialogIfRequired = showConfirmDialogIfRequired;
+            return this.PmPreDatedTaskHandler;
+        }
+    }
+    createGlobals();
+    return {
+        showConfirmDialogIfRequired: showConfirmDialogIfRequired
+    };
+
+})();

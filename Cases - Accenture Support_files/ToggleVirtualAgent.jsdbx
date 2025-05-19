@@ -1,0 +1,29 @@
+(function(global, el) {
+	/**
+	 * Declares a private member and creates a namespace for our 
+	 * object to avoid name conflicts in the global space.
+	 */
+	var ACN = ACN || {};
+
+	/**
+	 * Executes the class's constructor-like method
+	 */
+    ACN.SPVAGENT = function() {
+        ACN.SPVAGENT.prototype.__init__.apply(this);
+    };
+
+    ACN.SPVAGENT.prototype = {
+        __init__: function() {
+            this.hideVAStyleElement = el.createElement('style');
+            this.hideVAStyleElement.innerHTML = '.sp-ac-root {\n            display: none;\n        }';
+        },
+        hideVirtualAgentOnInvalidPages: function() {
+            if (global.location.search) el.head.appendChild(this.hideVAStyleElement);
+            else this.hideVAStyleElement.remove();
+        }
+    };
+	/**
+	 * Exposes our namespaced object to the global space.
+	 */
+    global.ACN.SPVAGENT = ACN.SPVAGENT;
+})(window, document);

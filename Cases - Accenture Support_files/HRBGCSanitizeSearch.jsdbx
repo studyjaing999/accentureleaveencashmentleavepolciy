@@ -1,0 +1,6 @@
+function HRBGCSanitizeSearch(str) {
+	var reg = /[&<>"'/]/ig;
+	return str.replace(reg, '');
+}
+
+
