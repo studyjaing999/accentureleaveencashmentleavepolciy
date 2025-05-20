@@ -1,0 +1,364 @@
+﻿.hidden {
+    display: none;
+}
+
+.charCount {
+    padding-left: 15px;
+    font-size: 12px;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.collaps-Markdown > .truncator-link,
+.collaps-Markdown > p {
+    display: inline;
+    vertical-align: top;
+    text-align: justify;
+}
+
+.webchat__bubble > .webchat__bubble__content {
+    box-shadow: 0px 1px 1px 0px rgba(0, 0, 0, 0.2);
+    margin-bottom: 2px;
+}
+
+.webchat__defaultAvatar--fromUser {
+    border-radius: 50%;
+    border-top-left-radius: 50%;
+    border-top-right-radius: 50%;
+    border-bottom-right-radius: 50%;
+    border-bottom-left-radius: 50%;
+}
+
+.webchat__initialsAvatar__initials {
+    font-family: "Segoe UI","Segoe UI Web Regular","Segoe UI Symbol","Helvetica Neue","BBAlpha Sans","S60 Sans",Arial,sans-serif;
+}
+
+.main {
+    border-top: 3px solid rgb(160, 85, 245) !important;
+}
+#Path_707 {
+    fill: #0041F0;
+    stroke: #0041F0;
+}
+
+.validation-error {
+    border: 1.5px solid red !important;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+}
+
+.tooltip-error {
+    position: relative;
+    display: inline-block;
+    width: 20px;
+    text-align: center;
+    border-radius: 50%;
+    border-top-left-radius: 50%;
+    border-top-right-radius: 50%;
+    border-bottom-right-radius: 50%;
+    border-bottom-left-radius: 50%;
+    background-color: rgb(184, 38, 38);
+    color: #fff;
+    font-weight: bolder;
+}
+
+    .tooltip-error .tooltiptext {
+        visibility: visible;
+        height: 0px;
+        width: 250px;
+        background-color: rgb(184, 38, 38);
+        color: rgba(0,0,0,0);
+        text-align: center;
+        border-radius: 6px;
+        padding: 0px;
+        position: absolute;
+        z-index: 1;
+        bottom: 150%;
+        left: 50%;
+        margin-left: 9999px;
+    }
+
+    .tooltip-error:hover .tooltiptext {
+        height: auto;
+        padding: 8px;
+        color: #fff;
+        margin-left: -133px;
+    }
+
+    .tooltip-error .tooltiptext::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 0px;
+        border-style: solid;
+        border-color: rgb(184, 38, 38) transparent transparent transparent;
+    }
+
+    .tooltip-error:hover .tooltiptext::after {
+        border-width: 5px;
+    }
+
+.thumbsUp {
+    content: 👍🏼;
+    background-image: url('../Images/NewThumbsUp.svg') !important;
+    background-repeat: no-repeat;
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+    float: left;
+    /* filter: saturate(10); */
+    background-size: 30px;
+    vertical-align: middle;
+    margin-top: 5px;
+}
+
+.thumbsDown {
+    background-image: url('../Images/NewThumbsDown.svg') !important;
+    background-repeat: no-repeat;
+    width: 35px;
+    height: 35px;
+    content: 👎🏼;
+    cursor: pointer;
+    float: left;
+    background-size: 30px;
+    vertical-align: middle;
+    margin-top: 5px;
+}
+
+.webchat__stacked-layout__status span {
+    padding: 0px !important;
+}
+
+.div-thumbs-up {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    cursor: pointer;
+    float: left;
+}
+    .div-thumbs-up:focus {
+        outline: 2px solid rgb(16, 16, 16) !important;
+        outline-offset: 0.7px;
+    }
+        .div-thumbs-up svg {
+        transition: 0.2s ease-out;
+        width:35px;
+    }
+
+.div-thumbs-down {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    cursor: pointer;
+    float: left;
+}
+.div-thumbs-down:focus {
+    outline: 2px solid rgb(16, 16, 16) !important;
+    outline-offset: 0.7px;
+}
+    .div-thumbs-down svg {
+        transition: 0.2s ease-out;
+        width: 35px;
+    }
+
+
+.div-thumbs-up svg {
+    animation: thumbsUpAnimate 1s;
+}
+
+.div-thumbs-down svg {
+    animation: thumbsDownAnimate 1s;
+    margin-left: 7px;
+}
+
+.div-thumbs-up svg path {
+    fill: #8421E2;
+}
+
+.div-thumbs-down svg path {
+    fill: #666666;
+}
+
+.div-thumbs-up:hover svg,
+.div-thumbs-up:focus svg {
+    transform: rotate(-5deg) translate(0px, -1px);
+}
+
+.div-thumbs-up:active svg {
+    transform: rotate(-10deg) translate(0px, -2px);
+}
+
+.div-thumbs-up:hover svg path,
+.div-thumbs-up:focus svg path {
+    fill: #3F0A6C !important;
+}
+
+.div-thumbs-down:hover svg,
+.div-thumbs-down:focus svg {
+    transform: rotate(-5deg) translate(0px, 1px);
+}
+
+.div-thumbs-down:active svg {
+    transform: rotate(-10deg) translate(0px, 2px);
+}
+
+.div-thumbs-down:hover svg path,
+.div-thumbs-down:focus svg path {
+    fill: #3F056C !important;
+}
+
+
+@keyframes thumbsUpAnimate {
+    0% {
+        transform: rotate(10) translate(0px, 0);
+    }
+
+    50% {
+        transform: rotate(-10deg) translate(0px, -2px);
+    }
+
+    100% {
+        transform: rotate(0) translate(0px, 0);
+    }
+}
+
+@keyframes thumbsDownAnimate {
+    0% {
+        transform: rotate(0) translate(0px, 0);
+    }
+
+    50% {
+        transform: rotate(-10deg) translate(0px, 2px);
+    }
+
+    100% {
+        transform: rotate(0) translate(0px, 0);
+    }
+}
+
+.webchat__stacked-layout__status {
+    clear: both !important;
+}
+
+.webchat__basic-transcript {
+    padding-right: 5px;
+    padding-top: 16px;
+    padding-bottom: 5px;
+}
+
+.dictating {
+    width: 46px;
+    border-radius: 50%;
+    background-color: #0172A6;
+    animation-name: pulse-shadow--collection;
+    animation-duration: 2s;
+    animation-timing-function: initial;
+    animation-delay: initial;
+    animation-iteration-count: infinite;
+    animation-direction: initial;
+    animation-fill-mode: initial;
+    animation-play-state: initial;
+}
+
+.truncator-link {
+    cursor: pointer;
+}
+
+.webchat__basic-transcript__scrollable::-webkit-scrollbar {
+    width: 8px !important;
+}
+
+/* Track */
+.webchat__basic-transcript__scrollable::-webkit-scrollbar-track {
+    border-radius: 10px !important;
+}
+
+/* Handle */
+.webchat__basic-transcript__scrollable::-webkit-scrollbar-thumb {
+    background: #7500C0 !important;
+    border-radius: 10px !important;
+    min-height: 50px;
+}
+
+/*For IE [scrollbar]*/
+.webchat__basic-transcript__scrollable {
+    scrollbar-face-color: #4a77a0;
+    scrollbar-highlight-color: #4a77a0;
+    scrollbar-arrow-color: #fff;
+    scrollbar-track-color: #fff;
+    scrollbar-shadow-color: #fff;
+    scrollbar-3dlight-color: #fff;
+    scrollbar-darkshadow-Color: #fff;
+}
+
+​​
+.webchat__carousel-filmstrip__attachment:first-child {
+    padding-left: 10px !important;
+}
+
+.react-film__main {
+    max-width: 563px;
+    margin-left: 10px !important;
+}
+
+.webchat__carousel-filmstrip__content .ac-textBlock {
+    white-space: normal !important;
+}
+
+.react-film__filmstrip__item {
+    padding-left: 0px !important;
+    max-width: 518px !important;
+}
+
+.react-film__flipper.react-film__flipper--left {
+    left: 35px !important;
+}
+
+.react-film__flipper.react-film__flipper--right {
+    right: -10px !important;
+}
+
+.webchat__carousel-filmstrip {
+    margin-left: 45px !important;
+}
+
+    .webchat__carousel-filmstrip .webchat__carousel-filmstrip__attachment {
+        min-width: 280px !important;
+        max-width: 518px !important;
+    }
+
+@media only screen and (max-width: 767px) {
+    .webchat__carousel-filmstrip .webchat__carousel-filmstrip__attachment {
+        width: auto !important;
+    }
+}
+
+.webchat__bubble__content P {
+    margin-bottom: 4px !important;
+}
+
+.webchat__send-box-text-box {
+    width: 70%;
+}
+
+.webchat__send-box-text-box__input {
+    width: inherit;
+}
+
+.webchat__icon-button svg {
+    fill: #0172a6 !important
+}
+.webchat__icon-button:focus {
+    outline: 2px solid rgb(16, 16, 16) !important;
+    outline-offset: -4px;
+    }
+.whattoask-button-link:focus-visible {
+    outline: 3px solid rgb(16, 16, 16) !important;
+    outline-offset: 1px;
+}
+.btn:focus-visible{
+    outline: 3px solid rgb(16, 16, 16) !important;
+    outline-offset: 1px;
+}
+

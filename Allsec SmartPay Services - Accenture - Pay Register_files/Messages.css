@@ -1,0 +1,122 @@
+﻿ .Div_pop_Mess
+            {
+                        font-family:Arial, Helvetica, sans-serif;
+                        font-size:100%;
+                        font-weight:bold;
+                        color:#660;
+            }
+
+ 
+     #Div_Dummy 
+     {
+ 	    display: none;
+        position: absolute;
+        top: 20%;
+        left: 30%;
+        width: 25%;
+        height: 25%;
+    }
+
+#Div_Mess
+ {
+
+        display: none;
+
+        position: fixed;
+     
+        bottom:  0;
+            
+        left: 30%;
+
+        width: 450px;
+
+        height: 140px;
+
+        padding: 0px;
+
+        border-style:solid;
+
+        border-color:#7500c0;
+
+        border-width :16px;
+
+        font-family:Arial, Helvetica, sans-serif;
+
+        font-size:0.68em;
+
+        font-weight:bold;
+
+        color:#660;
+
+        background-color: white;
+
+        z-index:1002;
+
+        overflow: auto;
+}
+
+
+ #Div_Fade
+ {
+        display: none;
+        position: Fixed;
+        top: 0%;
+        left: 0%;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+        min-height:900px;
+        max-height:1800px;
+        z-index:1001;
+        -moz-opacity: 0.8;
+        opacity:.80;
+        filter: alpha(opacity=80);
+    }
+    
+    .default_dialog {
+        border-radius: 10px;
+        border: 0px solid #000;
+        min-width: calc(480px - (15px * 2));
+        }
+    
+    .zf--msgBoxTitle.text-align-center {
+        padding: 5px 0 5px 0;
+        font-variant: small-caps;
+        font-size: 16pt;
+        font-weight: lighter;
+        color: #00335e;
+        width: 100%;
+        border-bottom: 1px solid #002c5f;
+        text-align: left !important;
+        font-family: verdana !important;
+    }
+    div.msgBoxImage img
+    {
+        height:75px;
+        width:75px;
+    }
+    
+    div.msgBoxContent
+    {
+        font-size:12px;
+        margin:0 3px 6px 3px;
+        display:inline-block;
+        float:left; 
+        height:auto !important;
+        width:319px;
+    } 
+    
+    
+    div.msgBoxContent p {
+        margin-top: 25px !important;
+        line-height: 30px;
+        color: #004076;
+        font-size: 13px;
+        font-family: verdana !important;
+    }
+    .floating-dipa{
+        z-index: 0 !important;
+    }
+    .dialog-backdrop{
+        z-index: 1000 !important;
+    }

@@ -1,0 +1,870 @@
+﻿/// <reference path="jquery-1.4.1.min.js" /> 
+var aria = aria || {};
+
+aria.Utils = aria.Utils || {};
+
+var PopdivMsgBoxId = "";
+
+
+
+(function () {
+    /*
+     * When util functions move focus around, set this true so the focus listener
+     * can ignore the events.
+     */
+    aria.Utils.IgnoreUtilFocusChanges = false;
+
+    /**
+     * @desc Set focus on descendant nodes until the first focusable element is
+     *       found.
+     * @param element
+     *          DOM node for which to find the first focusable descendant.
+     * @returns
+     *  true if a focusable element is found and focus is set.
+     */
+    aria.Utils.focusFirstDescendant = function (element) {
+        for (var i = 0; i < element.childNodes.length; i++) {
+            var child = element.childNodes[i];
+            if (aria.Utils.attemptFocus(child) ||
+                aria.Utils.focusFirstDescendant(child)) {
+                return true;
+            }
+        }
+        return false;
+    }; // end focusFirstDescendant
+
+    /**
+     * @desc Find the last descendant node that is focusable.
+     * @param element
+     *          DOM node for which to find the last focusable descendant.
+     * @returns
+     *  true if a focusable element is found and focus is set.
+     */
+    aria.Utils.focusLastDescendant = function (element) {
+        for (var i = element.childNodes.length - 1; i >= 0; i--) {
+            var child = element.childNodes[i];
+            if (aria.Utils.attemptFocus(child) ||
+                aria.Utils.focusLastDescendant(child)) {
+                return true;
+            }
+        }
+        return false;
+    }; // end focusLastDescendant
+
+    /**
+     * @desc Set Attempt to set focus on the current node.
+     * @param element
+     *          The node to attempt to focus on.
+     * @returns
+     *  true if element is focused.
+     */
+    aria.Utils.attemptFocus = function (element) {
+        if (!aria.Utils.isFocusable(element)) {
+            return false;
+        }
+
+        aria.Utils.IgnoreUtilFocusChanges = true;
+        try {
+            element.focus();
+        }
+        catch (e) {
+        }
+        aria.Utils.IgnoreUtilFocusChanges = false;
+        return (document.activeElement === element);
+    }; // end attemptFocus
+
+    /* Modals can open modals. Keep track of them with this array. */
+    aria.OpenDialogList = aria.OpenDialogList || new Array(0);
+
+    /**
+     * @returns the last opened dialog (the current dialog)
+     */
+    aria.getCurrentDialog = function () {
+        if (aria.OpenDialogList && aria.OpenDialogList.length) {
+            return aria.OpenDialogList[aria.OpenDialogList.length - 1];
+        }
+    };
+
+    aria.closeCurrentDialog = function () {
+        var currentDialog = aria.getCurrentDialog();
+        if (currentDialog) {
+            currentDialog.close();
+            return true;
+        }
+
+        return false;
+    };
+
+    aria.handleEscape = function (event) {
+        var key = event.which || event.keyCode;
+
+        if (key === aria.KeyCode.ESC && aria.closeCurrentDialog()) {
+            event.stopPropagation();
+        }
+
+    };
+
+    //document.addEventListener('keyup', aria.handleEscape);
+
+    /**
+     * @constructor
+     * @desc Dialog object providing modal focus management.
+     *
+     * Assumptions: The element serving as the dialog container is present in the
+     * DOM and hidden. The dialog container has role='dialog'.
+     *
+     * @param dialogId
+     *          The ID of the element serving as the dialog container.
+     * @param focusAfterClosed
+     *          Either the DOM node or the ID of the DOM node to focus when the
+     *          dialog closes.
+     * @param focusFirst
+     *          Optional parameter containing either the DOM node or the ID of the
+     *          DOM node to focus when the dialog opens. If not specified, the
+     *          first focusable element in the dialog will receive focus.
+     */
+    aria.Dialog = function (dialogId, focusAfterClosed, focusFirst) {
+        this.dialogNode = document.getElementById(dialogId);
+
+        if (this.dialogNode === null ||
+            this.dialogNode.getAttribute('role') !== 'dialog') {
+            throw new Error(
+              'Dialog() requires a DOM element with ARIA role of dialog.');
+        }
+
+        // Wrap in an individual backdrop element if one doesn't exist
+        // Native <dialog> elements use the ::backdrop pseudo-element, which
+        // works similarly.
+        var backdropClass = 'dialog-backdrop';
+        if (this.dialogNode.parentNode.classList.contains(backdropClass)) {
+            this.backdropNode = this.dialogNode.parentNode;
+        }
+        else {
+            this.backdropNode = document.createElement('div');
+            this.backdropNode.className = backdropClass;
+            this.dialogNode.parentNode.insertBefore(this.backdropNode, this.dialogNode);
+            this.backdropNode.appendChild(this.dialogNode);
+        }
+        this.backdropNode.classList.add('active');
+
+        if (typeof focusAfterClosed !== 'undefined' && focusAfterClosed != "false") {
+
+            if (typeof focusAfterClosed === 'string') {
+                this.focusAfterClosed = document.getElementById(focusAfterClosed);
+            }
+            else if (typeof focusAfterClosed === 'object') {
+                this.focusAfterClosed = focusAfterClosed;
+            }
+            else {
+                throw new Error(
+                  'the focusAfterClosed parameter is required for the aria.Dialog constructor.');
+            }
+        }
+
+        if (typeof focusFirst === 'string') {
+            this.focusFirst = document.getElementById(focusFirst);
+        }
+        else if (typeof focusFirst === 'object') {
+            this.focusFirst = focusFirst;
+        }
+        else {
+            this.focusFirst = null;
+        }
+
+        // Bracket the dialog node with two invisible, focusable nodes.
+        // While this dialog is open, we use these to make sure that focus never
+        // leaves the document even if dialogNode is the first or last node.
+        var preDiv = document.createElement('div');
+        this.preNode = this.dialogNode.parentNode.insertBefore(preDiv,
+          this.dialogNode);
+        this.preNode.tabIndex = 0;
+        var postDiv = document.createElement('div');
+        this.postNode = this.dialogNode.parentNode.insertBefore(postDiv,
+          this.dialogNode.nextSibling);
+        this.postNode.tabIndex = 0;
+
+        // If this modal is opening on top of one that is already open,
+        // get rid of the document focus listener of the open dialog.
+        if (aria.OpenDialogList.length > 0) {
+            aria.getCurrentDialog().removeListeners();
+        }
+
+        this.addListeners();
+        aria.OpenDialogList.push(this);
+        this.clearDialog();
+        this.dialogNode.className = 'default_dialog DummyTabRemoveClass'; // make visible
+
+        if (this.focusFirst) {
+            this.focusFirst.focus();
+        }
+        else {
+            aria.Utils.focusFirstDescendant(this.dialogNode);
+        }
+
+        this.lastFocus = document.activeElement;
+    }; // end Dialog constructor
+
+    aria.Dialog.prototype.clearDialog = function () {
+        Array.prototype.map.call(
+          this.dialogNode.querySelectorAll('input'),
+          function (input) {
+              //input.value = '';
+          }
+        );
+    };
+
+    /**
+     * @desc
+     *  Hides the current top dialog,
+     *  removes listeners of the top dialog,
+     *  restore listeners of a parent dialog if one was open under the one that just closed,
+     *  and sets focus on the element specified for focusAfterClosed.
+     */
+    aria.Dialog.prototype.close = function () {
+        aria.OpenDialogList.pop();
+        this.removeListeners();
+        aria.Utils.remove(this.preNode);
+        aria.Utils.remove(this.postNode);
+        this.dialogNode.className = 'hidden';
+        this.backdropNode.classList.remove('active');
+        if (typeof focusAfterClosed !== 'undefined' && focusAfterClosed != "false") {
+
+            if (typeof focusAfterClosed === 'string') {
+                this.focusAfterClosed.focus();
+            }
+            else if (typeof focusAfterClosed === 'object') {
+                this.focusAfterClosed.focus();
+            }
+            
+        }
+        
+
+
+        const elements = document.getElementsByClassName("dialog-backdrop");
+        while (elements.length > 0) elements[0].remove();
+
+        // If a dialog was open underneath this one, restore its listeners.
+        if (aria.OpenDialogList.length > 0) {
+            aria.getCurrentDialog().addListeners();
+        }
+    }; // end close
+
+    /**
+     * @desc
+     *  Hides the current dialog and replaces it with another.
+     *
+     * @param newDialogId
+     *  ID of the dialog that will replace the currently open top dialog.
+     * @param newFocusAfterClosed
+     *  Optional ID or DOM node specifying where to place focus when the new dialog closes.
+     *  If not specified, focus will be placed on the element specified by the dialog being replaced.
+     * @param newFocusFirst
+     *  Optional ID or DOM node specifying where to place focus in the new dialog when it opens.
+     *  If not specified, the first focusable element will receive focus.
+     */
+    aria.Dialog.prototype.replace = function (newDialogId, newFocusAfterClosed,
+      newFocusFirst) {
+        var closedDialog = aria.getCurrentDialog();
+        aria.OpenDialogList.pop();
+        this.removeListeners();
+        aria.Utils.remove(this.preNode);
+        aria.Utils.remove(this.postNode);
+        this.dialogNode.className = 'hidden';
+        this.backdropNode.classList.remove('active');
+
+        var focusAfterClosed = newFocusAfterClosed || this.focusAfterClosed;
+        var dialog = new aria.Dialog(newDialogId, focusAfterClosed, newFocusFirst);
+    }; // end replace
+
+    aria.Dialog.prototype.addListeners = function () {
+        document.addEventListener('focus', this.trapFocus, true);
+    }; // end addListeners
+
+    aria.Dialog.prototype.removeListeners = function () {
+        document.removeEventListener('focus', this.trapFocus, true);
+    }; // end removeListeners
+
+    aria.Dialog.prototype.trapFocus = function (event) {
+        if (aria.Utils.IgnoreUtilFocusChanges) {
+            return;
+        }
+        var currentDialog = aria.getCurrentDialog();
+        if (currentDialog.dialogNode.contains(event.target)) {
+            currentDialog.lastFocus = event.target;
+        }
+        else {
+            aria.Utils.focusFirstDescendant(currentDialog.dialogNode);
+            if (currentDialog.lastFocus == document.activeElement) {
+                aria.Utils.focusLastDescendant(currentDialog.dialogNode);
+            }
+            currentDialog.lastFocus = document.activeElement;
+        }
+    }; // end trapFocus
+
+    window.openDialog = function (dialogId, focusAfterClosed, focusFirst) {
+        var dialog = new aria.Dialog(dialogId, focusAfterClosed, focusFirst);
+    };
+
+    window.closeDialog = function (closeButton) {
+        var topDialog = aria.getCurrentDialog();
+        if (topDialog.dialogNode.contains(closeButton)) {
+            topDialog.close();
+        }
+    }; // end closeDialog
+
+    window.replaceDialog = function (newDialogId, newFocusAfterClosed,
+      newFocusFirst) {
+        var topDialog = aria.getCurrentDialog();
+        if (topDialog.dialogNode.contains(document.activeElement)) {
+            topDialog.replace(newDialogId, newFocusAfterClosed, newFocusFirst);
+        }
+    }; // end replaceDialog
+
+}());
+
+var msgBoxImagePath = "../JS/MessageBox/images/"
+var ClosemsgBox = true;
+
+function IsmsgBoxColse(blnvisible) {
+
+    ClosemsgBox = blnvisible;
+}
+
+jQuery.msgBox = msg;
+function msg(options) {
+    var isShown = false;
+    var typeOfValue = typeof options;
+    var classdivTitle;
+    if (options.type == "alert" || options.type == "error")
+        var classdivTitle = "zf--modal-dialog zf--red";
+    else
+        classdivTitle = options.type == "success" ? "zf--modal-dialog zf--green" : "zf--modal-dialog zf--blu";
+
+    var defaults = {
+        content: (typeOfValue == "string" ? options : "Message"),
+        title: "Warning",
+        type: "alert",
+        autoClose: false,
+        timeOut:0,
+        showButtons: true,
+        buttons: [{ value: "Ok"}],
+        inputs: [{ type: "text", name: "userName", header: "User Name" }, { type: "password", name: "password", header: "Password"}],
+        success: function (result) { },
+        beforeShow: function () { },
+        afterShow: function () { },
+        beforeClose: function () { },
+        afterClose: function () { },
+        opacity: 0.1
+    };
+    options = typeOfValue == "string" ? defaults : options;
+    if (options.type != null) {
+        switch (options.type) {
+            case "alert":
+                options.title = options.title == null ? "Warning" : options.title;
+                break;
+            case "info":
+                options.title = options.title == null ? "Information" : options.title;
+                break;
+            case "error":
+                options.title = options.title == null ? "Error" : options.title;
+                break;
+            case "confirm":
+                options.title = options.title == null ? "Confirmation" : options.title;
+                options.buttons = options.buttons == null ? [{ value: "Yes" }, { value: "No" }, { value: "Cancel"}] : options.buttons;
+                break;
+            case "prompt":
+                options.title = options.title == null ? "Log In" : options.title;
+                options.buttons = options.buttons == null ? [{ value: "Login" }, { value: "Cancel"}] : options.buttons;
+                break;
+            default:
+                image = "alert.png";
+        }
+    }
+    options.timeOut = options.timeOut == null ? (options.content == null ? 500 : options.content.length * 70) : options.timeOut;
+    options = $.extend(defaults, options);
+    if (options.autoClose) {
+        setTimeout(hide, options.timeOut);
+    }
+    var image = "";
+    switch (options.type) {
+        case "alert":
+            image = "alert.png";
+            break;
+        case "info":
+            image = "info.png";
+            break;
+        case "error":
+            image = "error.png";
+            break;
+        case "confirm":
+            image = "confirm.png";
+            break;
+        default:
+            image = "alert.png";
+    }
+
+
+    var divMsgBoxContentId = divId + "Content";
+    var divMsgBoxImageId = divId + "Image";
+    var divMsgBoxButtonsId = divId + "Buttons";
+    var divMsgBoxBackGroundId = divId + "BackGround";
+
+    var buttons = "";
+    $(options.buttons).each(function (index, button) {
+        //        buttons += "<button class=\"msgButton\"  name=\"" + button.value + "\" onclick=\"closeDialog(this)\">" + button.value + " </button>";
+        if (button.value == "Ok" || button.value == "No" || button.value == "Cancel") {
+            //buttons += "<input class=\"msgButton\" type=\"button\" name=\"" + button.value + "\" value=\"" + button.value + "\" />";
+            //buttons += "<button class=\"msgButton\"  name=\"" + button.value + "\" onclick=\"closeDialog(this)\">" + button.value + " </button>";
+            buttons += "<input class=\"msgButton\" type=\"button\" name=\"" + button.value + "\" value=\"" + button.value + "\"  onclick=\"closeDialog(this)\" />";
+
+        }
+        else if (button.value == "Yes") {
+            buttons += "<input class=\"msgButton\" type=\"button\" name=\"" + button.value + "\" value=\"" + button.value + "\" onclick=\"closeDialog(this)\" />";
+        }
+
+    });
+
+    var inputs = "";
+    $(options.inputs).each(function (index, input) {
+        var type = input.type;
+        if (type == "checkbox" || type == "radiobutton") {
+            inputs += "<div class=\"msgInput\">" +
+            "<input type=\"" + input.type + "\" name=\"" + input.name + "\" " + (input.checked == null ? "" : "checked ='" + input.checked + "'") + " value=\"" + (typeof input.value == "undefined" ? "" : input.value) + "\" />" +
+            "<text>" + input.header + "</text>" +
+            "</div>";
+        }
+        else {
+            inputs += "<div class=\"msgInput\">" +
+            "<span class=\"msgInputHeader\">" + input.header + "<span>" +
+            "<input type=\"" + input.type + "\" name=\"" + input.name + "\" value=\"" + (typeof input.value == "undefined" ? "" : input.value) + "\" />" +
+            "</div>";
+        }
+    });
+
+    var divId = "msgBox" + new Date().getTime();
+    var divMsgBoxId = divId;
+
+    //var divBackGround = "<div id=" + divMsgBoxBackGroundId + " class=\"msgBoxBackGround\"></div>";
+    var divBackGround = "";
+    var divTitle = "<div class=\"" + classdivTitle + "\"><div class=\"zf--msgBoxTitle  text-align-center\">" + options.title + "</div>";
+    var divContainer = "<div class=\"msgBoxContainer\"><div id=" + divMsgBoxImageId + " class=\"msgBoxImage\"><img src=\"" + msgBoxImagePath + image + "\"/></div><div id=" + divMsgBoxContentId + " class=\"msgBoxContent\"><p tabindex='0'>" + options.content + "</p></div></div>";
+
+    var divButtons = "<div id=" + divMsgBoxButtonsId + " class=\"msgBoxButtons\">" + buttons + "</div>";
+    var divInputs = "<div class=\"msgBoxInputs\">" + inputs + "</div></div>";
+
+    var divMsgBox;
+    var divMsgBoxContentDummyTabRemoveClass
+    var divMsgBoxImage;
+    var divMsgBoxButtons;
+    var divMsgBoxBackGround;
+
+    var divIdOver = "Over" + new Date().getTime();
+    var divOverAllBox = divIdOver;
+
+
+
+    if (options.type == "prompt") {
+        $("body").append(divBackGround + "<div role='dialog' id=" + divOverAllBox + " class=\"default_dialog msgBox\">" + divTitle + "<div >" + divContainer + (options.showButtons ? divButtons + "</div>" : "</div>") + "</div> ");
+        divMsgBox = $("#" + divMsgBoxId);
+        divMsgBoxContent = $("#" + divMsgBoxContentId);
+        divMsgBoxImage = $("#" + divMsgBoxImageId);
+        divMsgBoxButtons = $("#" + divMsgBoxButtonsId);
+        //divMsgBoxBackGround = $("#" + divMsgBoxBackGroundId); 
+
+    }
+    else {
+        $("body").append(divBackGround + "<div role='dialog'  id=" + divMsgBoxId + " class=\"default_dialog msgBox\">" + divTitle + "<div>" + divContainer + (options.showButtons ? divButtons + "</div>" : "</div>") + "</div>");
+        divMsgBox = $("#" + divMsgBoxId);
+        divMsgBoxContent = $("#" + divMsgBoxContentId);
+        divMsgBoxImage = $("#" + divMsgBoxImageId);
+        divMsgBoxButtons = $("#" + divMsgBoxButtonsId);
+        //divMsgBoxBackGround = $("#" + divMsgBoxBackGroundId); 
+    }
+
+    PopdivMsgBoxId = divMsgBoxId;
+
+
+
+
+    var width = divMsgBox.width();
+    var height = divMsgBox.height();
+    var windowHeight = $(window).height();
+    var windowWidth = $(window).width();
+
+    var top = 150;// windowHeight / 2 - height / 2;
+    var left =windowWidth / 2 - width / 2;
+
+    //show();
+
+    function show() {
+        if (isShown) {
+            return;
+        }
+        divMsgBox.css({ opacity: 0, top: top - 50, left: left });
+        divMsgBox.css("background-image", "url('" + msgBoxImagePath + "msgBoxBackGround.png')");
+        //divMsgBoxBackGround.css({ opacity: options.opacity });
+        options.beforeShow();
+
+        //divMsgBoxBackGround.css({ "width": ($(document).width()-21), "height": getDocHeight() });
+        // divMsgBoxBackGround.css({ "width": $(document).width() });
+
+        //$(divMsgBoxId + "," + divMsgBoxBackGroundId).fadeIn(0);
+        divMsgBox.animate({ opacity: 1, "top": top, "left": left }, 200);
+        setTimeout(options.afterShow, 200);
+        isShown = true;
+        $(window).bind("resize", function (e) {
+            var width = divMsgBox.width();
+            var height = divMsgBox.height();
+            var windowHeight = $(window).height();
+            var windowWidth = $(window).width();
+
+            var top = windowHeight / 2 - height / 2;
+            var left = windowWidth / 2 - width / 2;
+
+            divMsgBox.css({ "top": top, "left": left });
+        });
+    }
+
+    function hide() {
+        if (!isShown || !ClosemsgBox) {
+            return;
+        }
+        options.beforeClose();
+        divMsgBox.animate({ opacity: 0, "top": top - 50, "left": left }, 200);
+        //divMsgBoxBackGround.fadeOut(300);
+        //setTimeout(function () { divMsgBox.remove(); divMsgBoxBackGround.remove(); }, 300);
+        setTimeout(options.afterClose, 300);
+        isShown = false;
+    }
+
+    function getDocHeight() {
+        var D = document;
+        return Math.max(
+        Math.max(D.body.scrollHeight, D.documentElement.scrollHeight),
+        Math.max(D.body.offsetHeight, D.documentElement.offsetHeight),
+        Math.max(D.body.clientHeight, D.documentElement.clientHeight));
+    }
+
+    function getFocus() {
+        divMsgBox.fadeOut(200).fadeIn(200);
+    }
+
+    $("input.msgButton").click(function (e) {
+        e.preventDefault();
+        var value = $(this).val();
+        if (options.type != "prompt") {
+            options.success(value);
+        }
+        else {
+            var inputValues = [];
+            $("div.msgInput input").each(function (index, domEle) {
+                var name = $(this).attr("name");
+                var value = $(this).val();
+                var type = $(this).attr("type");
+                if (type == "checkbox" || type == "radiobutton") {
+                    inputValues.push({ name: name, value: value, checked: $(this).attr("checked") });
+                }
+                else {
+                    inputValues.push({ name: name, value: value });
+                }
+            });
+            options.success(value, inputValues);
+        }
+        hide();
+    });
+
+    //divMsgBoxBackGround.click(function (e) {
+    //    if (!options.showButtons || options.autoClose) {
+    //        hide();
+    //    }
+    //    else {
+    //        getFocus();
+    //    }
+    //});
+};
+
+//jQuery.msgBox.Show = msgBox;
+
+function msgBox(_title, _content, _type, _action, _autoClose) {
+
+    if (jQuery.msgBox == undefined)
+        jQuery.msgBox = msg;
+
+    //    type: info, error, confirm
+    try {
+
+        if (_autoClose == true) 
+        {
+
+            $.msgBox({
+                title: _title,
+                content: _content,
+                type: _type,
+                opacity: 0.4,
+                showButtons:false,
+                autoClose: _autoClose ,
+                timeOut: 1800
+            });
+
+            if (_action != undefined) eval("window.setTimeout('" + _action + "',1800)");
+            
+        } 
+        else if (_type == "confirm") 
+        {
+            $.msgBox({
+                title: _title,
+                content: _content,
+                type: _type,
+                opacity: 0.4,
+                buttons: [{ value: "Yes" }, { value: "No" }],
+                success: function (result) {
+                    if (result == "Yes" && _action != undefined) {
+                        var senderName = _action.name ? _action.name : functions.replaceAll(_action.id, '_', '$');
+
+                        __doPostBack(senderName, '');
+                    }
+                }
+            });
+
+            if (document.getElementsByName('Yes').length != 0)
+                document.getElementsByName('Yes').item(0).focus();
+        }
+        else if (_type == "confirmOK") {
+            $.msgBox({
+                title: _title,
+                content: _content,
+                type: _type,
+                opacity: 0.4,
+                buttons: [{ value: "Ok" }],
+                success: function (result) {
+                    if (result == "Ok" && _action != undefined) {
+                        var senderName = _action.name ? _action.name : functions.replaceAll(_action.id, '_', '$');
+
+                        __doPostBack(senderName, '');
+                    }
+                }
+            });
+
+            if (document.getElementsByName('Ok').length != 0)
+                document.getElementsByName('Ok').item(0).focus();
+        }
+        else {
+            $.msgBox({
+                title: _title,
+                content: _content,
+                type: _type,
+                opacity: 0.4,
+                autoClose: _autoClose,
+                buttons: [{ value: "Ok"}],
+                success: function (result) {
+                    if (_action != undefined) eval(_action);
+                }
+            });
+
+            if (document.getElementsByName('Ok').length != 0)
+                document.getElementsByName('Ok').item(0).focus(); 
+        }
+        var dialog = new aria.Dialog(PopdivMsgBoxId, _action, "");
+    }
+    catch (ex) { }
+}
+
+
+/* Modals can open modals. Keep track of them with this array. */
+aria.OpenDialogListpopup = aria.OpenDialogListpopup || new Array(0);
+
+/**
+ * @returns the last opened dialog (the current dialog)
+ */
+aria.getCurrentDialogpopup = function () {
+    if (aria.OpenDialogListpopup && aria.OpenDialogListpopup.length) {
+        return aria.OpenDialogListpopup[aria.OpenDialogListpopup.length - 1];
+    }
+};
+
+aria.closeCurrentDialogpopup = function () {
+    var currentDialog = aria.getCurrentDialogpopup();
+    if (currentDialog) {
+        currentDialog.close();
+        return true;
+    }
+
+    return false;
+};
+
+aria.handleEscape = function (event) {
+    var key = event.which || event.keyCode;
+
+    //if (key === aria.KeyCode.ESC && aria.closeCurrentDialog()) {
+    //  event.stopPropagation();
+    //}
+    if (aria.closeCurrentDialogpopup()) {
+        event.stopPropagation();
+    }
+};
+
+//document.addEventListener('keyup', aria.handleEscape);
+
+aria.Dialogpopup = function (dialogId, focusAfterClosed, focusFirst) {
+    this.dialogNode = document.getElementById(dialogId);
+    if (this.dialogNode === null) {
+        throw new Error('No element found with id="' + dialogId + '".');
+    }
+
+    var validRoles = ['dialog', 'alertdialog'];
+    var isDialog = (this.dialogNode.getAttribute('role') || '')
+      .trim()
+      .split(/\s+/g)
+      .some(function (token) {
+          return validRoles.some(function (role) {
+              return token === role;
+          });
+      });
+    if (!isDialog) {
+        throw new Error(
+          'Dialog() requires a DOM element with ARIA role of dialog or alertdialog.');
+    }
+
+    var backdropClass = 'dialog-backdrop';
+    if (this.dialogNode.parentNode.classList.contains(backdropClass)) {
+        this.backdropNode = this.dialogNode.parentNode;
+    }
+    else {
+        this.backdropNode = document.createElement('div');
+        this.backdropNode.className = backdropClass;
+        this.dialogNode.parentNode.insertBefore(this.backdropNode, this.dialogNode);
+        this.backdropNode.appendChild(this.dialogNode);
+    }
+    this.backdropNode.classList.add('active');
+
+    // Disable scroll on the body element
+    document.body.classList.add(aria.Utils.dialogOpenClass);
+
+    if (typeof focusAfterClosed === 'string') {
+        this.focusAfterClosed = document.getElementById(focusAfterClosed);
+    }
+    else if (typeof focusAfterClosed === 'object') {
+        this.focusAfterClosed = focusAfterClosed;
+    }
+    else {
+        throw new Error(
+          'the focusAfterClosed parameter is required for the aria.Dialogpopup constructor.');
+    }
+
+    if (typeof focusFirst === 'string') {
+        this.focusFirst = document.getElementById(focusFirst);
+    }
+    else if (typeof focusFirst === 'object') {
+        this.focusFirst = focusFirst;
+    }
+    else {
+        this.focusFirst = null;
+    }
+
+    var preDiv = document.createElement('div');
+    this.preNode = this.dialogNode.parentNode.insertBefore(preDiv,
+      this.dialogNode);
+    this.preNode.tabIndex = 0;
+    var postDiv = document.createElement('div');
+    this.postNode = this.dialogNode.parentNode.insertBefore(postDiv,
+      this.dialogNode.nextSibling);
+    this.postNode.tabIndex = 0;
+
+    // If this modal is opening on top of one that is already open,
+    // get rid of the document focus listener of the open dialog.
+    if (aria.OpenDialogListpopup.length > 0) {
+        aria.getCurrentDialogpopup().removeListeners();
+    }
+
+    this.addListeners();
+    aria.OpenDialogListpopup.push(this);
+    this.clearDialog();
+    this.dialogNode.className = 'default_dialog'; // make visible
+
+    if (this.focusFirst) {
+        this.focusFirst.focus();
+    }
+    else {
+        aria.Utils.focusFirstDescendant(this.dialogNode);
+    }
+
+    this.lastFocus = document.activeElement;
+}; // end Dialog constructor
+
+aria.Dialogpopup.prototype.clearDialog = function () {
+    Array.prototype.map.call(
+      this.dialogNode.querySelectorAll('input'),
+      function (input) {
+          //input.value = '';
+      }
+    );
+};
+
+aria.Dialogpopup.prototype.close = function () {
+    aria.OpenDialogListpopup.pop();
+    this.removeListeners();
+    aria.Utils.remove(this.preNode);
+    aria.Utils.remove(this.postNode);
+    this.dialogNode.className = 'hidden';
+    this.backdropNode.classList.remove('active');
+    this.focusAfterClosed.focus();
+
+
+    // If a dialog was open underneath this one, restore its listeners.
+    if (aria.OpenDialogListpopup.length > 0) {
+        aria.getCurrentDialogpopup().addListeners();
+    }
+    else {
+        document.body.classList.remove(aria.Utils.dialogOpenClass);
+    }
+}; // end close
+
+aria.Dialogpopup.prototype.replace = function (newDialogId, newFocusAfterClosed,
+  newFocusFirst) {
+    var closedDialog = aria.getCurrentDialogpopup();
+    aria.OpenDialogListpopup.pop();
+    this.removeListeners();
+    aria.Utils.remove(this.preNode);
+    aria.Utils.remove(this.postNode);
+    this.dialogNode.className = 'hidden';
+    this.backdropNode.classList.remove('active');
+
+    var focusAfterClosed = newFocusAfterClosed || this.focusAfterClosed;
+    var dialog = new aria.Dialogpopup(newDialogId, focusAfterClosed, newFocusFirst);
+}; // end replace
+
+aria.Dialogpopup.prototype.addListeners = function () {
+    document.addEventListener('focus', this.trapFocus, true);
+}; // end addListeners
+
+aria.Dialogpopup.prototype.removeListeners = function () {
+    document.removeEventListener('focus', this.trapFocus, true);
+}; // end removeListeners
+
+aria.Dialogpopup.prototype.trapFocus = function (event) {
+    if (aria.Utils.IgnoreUtilFocusChanges) {
+        return;
+    }
+    var CurrentDialogpopup = aria.getCurrentDialogpopup();
+    if (CurrentDialogpopup.dialogNode.contains(event.target)) {
+        CurrentDialogpopup.lastFocus = event.target;
+    }
+    else {
+        aria.Utils.focusFirstDescendant(CurrentDialogpopup.dialogNode);
+        if (CurrentDialogpopup.lastFocus == document.activeElement) {
+            aria.Utils.focusLastDescendant(CurrentDialogpopup.dialogNode);
+        }
+        CurrentDialogpopup.lastFocus = document.activeElement;
+    }
+}; // end trapFocus
+
+window.Dialogpopup = function (dialogId, focusAfterClosed, focusFirst) {
+    var dialog = new aria.Dialogpopup(dialogId, focusAfterClosed, focusFirst);
+};
+
+window.CloseDialogpopup = function (closeButton) {
+    var topDialog = aria.getCurrentDialogpopup();
+    if (topDialog.dialogNode.contains(closeButton)) {
+        topDialog.close();
+    }
+}; //

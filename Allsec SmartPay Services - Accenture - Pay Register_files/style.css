@@ -1,0 +1,131 @@
+@font-face {
+    font-family: 'Graphik Regular';
+    src: url('../fonts/graphik/Graphik-Regular-Web.eot');
+    src: url('../fonts/graphik/Graphik-Regular-Web.eot?#iefix') format('embedded-opentype'), url('../fonts/graphik/Graphik-Regular-Web.woff2') format('woff2'), url('../fonts/graphik/Graphik-Regular-Web.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+    font-stretch: normal;
+}
+@font-face {
+    font-family: 'Graphik Medium';
+    src: url('../fonts/graphik/Graphik-Medium-Web.eot');
+    src: url('../fonts/graphik/Graphik-Medium-Web.eot?#iefix') format('embedded-opentype'), url('../fonts/graphik/Graphik-Medium-Web.woff2') format('woff2'), url('../fonts/graphik/Graphik-Medium-Web.woff') format('woff');
+    font-weight: 500;
+    font-style: normal;
+    font-stretch: normal;
+}
+@font-face {
+    font-family: 'Graphik Semibold';
+    src: url('../fonts/graphik/Graphik-Semibold-Web.eot');
+    src: url('../fonts/graphik/Graphik-Semibold-Web.eot?#iefix') format('embedded-opentype'), url('../fonts/graphik/Graphik-Semibold-Web.woff2') format('woff2'), url('../fonts/graphik/Graphik-Semibold-Web.woff') format('woff');
+    font-weight: 600;
+    font-style: normal;
+    font-stretch: normal;
+}
+@font-face {
+    font-family: 'Graphik Bold';
+    src: url('../fonts/graphik/Graphik-Bold-Web.eot');
+    src: url('../fonts/graphik/Graphik-Bold-Web.eot?#iefix') format('embedded-opentype'), url('../fonts/graphik/Graphik-Bold-Web.woff2') format('woff2'), url('../fonts/graphik/Graphik-Bold-Web.woff') format('woff');
+    font-weight: 700;
+    font-style: normal;
+    font-stretch: normal;
+}
+@font-face {
+    font-family: 'Graphik Black';
+    src: url('../fonts/graphik/Graphik-Black-Web.eot');
+    src: url('../fonts/graphik/Graphik-Black-Web.eot?#iefix') format('embedded-opentype'), url('../fonts/graphik/Graphik-Black-Web.woff2') format('woff2'), url('../fonts/graphik/Graphik-Black-Web.woff') format('woff');
+    font-weight: 800;
+    font-style: normal;
+    font-stretch: normal;
+}
+
+.dipa-widget .floating-dipa {
+    position: fixed;
+    width: 100px;
+    height: 90px;
+    bottom: 30px;
+    right: 0px;
+    display: block;
+    text-decoration: none;
+    -webkit-transition: all 0.3s linear;
+    -moz-transition: all 0.3s ease;
+    -ms-transition: all 0.3s ease;
+    -o-transition: all 0.3s ease;
+    transition: all 0.3s ease;
+    text-align: center;
+    z-index: 9;
+    box-shadow: 0 -3px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    padding: 5px 0; 
+}
+.dipa-widget .floating-dipa:hover, .dipa-widget .floating-dipa:focus {
+    text-decoration: none; 
+}
+.dipa-widget .floating-dipa .hover-text {
+    color: #222222;
+    font-family: 'Graphik Medium';
+    font-size: 12px;
+    line-height: 17px;
+    display: block; 
+}
+.dipa-widget .floating-dipa .hover-text .dipa-txt{
+    font-family: 'Graphik Black';
+}
+.dipa-widget .bot-container {
+    position: fixed;
+    right: 30px;
+    bottom: 27%;
+    max-height: 90%;
+    background-color: #FFF;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+    width: 300px;
+    margin-right: -400px;
+    border-radius: 3px;
+    z-index: 999;
+    transition: all .5s linear;
+}
+.dipa-widget .chat-container{
+    overflow: auto;
+}
+.dipa-widget .bot-header{
+    font-family: 'Graphik Black';
+    font-size: 14px;
+    background: #222222;
+    color: #FFF;
+    line-height: 25px;
+    padding: 13px 20px;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+}
+.dipa-widget .dipa-logo{
+    float: left;
+    width: 27px;
+    padding-right: 5px;
+}
+.dipa-widget .close-widget{
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+    font-size: 30px;
+    line-height: 19px;
+    color: #FFF;
+    float: right;
+}
+.dipa-widget.open .floating-dipa{
+    display: none;
+}
+.dipa-widget.open .bot-container{
+    margin-right: 0;
+}
+
+@media screen and (max-width: 600px) {
+  .dipa_close_message {
+    visibility: hidden;
+    clear: both;
+    display: none;
+  }
+  #wrapper {
+    width: 1350px;
+  }
+}

@@ -1,0 +1,494 @@
+﻿var jsonData = [
+  {
+    "Key": "NEW IT",
+    "Value": "NEW ITE"
+  },
+  {
+    "Key": "Bhaiya Dhuj",
+    "Value": "Bhaiya Dhooj"
+  },
+  {
+    "Key": "Bhai Dhuj",
+    "Value": "Bhai Dhooj"
+  },
+  {
+    "Key": "Bhaidhuj",
+    "Value": "Bhai Dhooj"
+  },
+  {
+    "Key": "bhaiduj",
+    "Value": "Bhai Dhooj"
+  },
+  {
+    "Key": "dhuj",
+    "Value": "Dhooj"
+  },
+  {
+    "Key": "Bengali New Year s day",
+    "Value": "Bengali New Years day"
+  },
+  {
+    "Key": "Id-ul-Zuha",
+    "Value": "EId-ul-Zuha"
+  },
+  {
+    "Key": "Id ul Zuha",
+    "Value": "EId ul Zuha"
+  },
+  {
+    "Key": "Bakrid Id ul Zuha",
+    "Value": "Bakreed EId ul Zuha"
+  },
+  {
+    "Key": "Bakrid/Id-ul-Zuha",
+    "Value": "Bakreed/EId-ul-Zuha"
+  },
+  {
+    "Key": "ASOC",
+    "Value": "Ay SOC"
+  },
+  {
+    "Key": "Infra",
+    "Value": "In fra"
+  },
+  {
+    "Key": "WBSe",
+    "Value": "W bs e"
+  },
+  {
+    "Key": "Wbse",
+    "Value": "W bs e"
+  },
+  {
+    "Key": "AST",
+    "Value": "[A][S][T]"
+  },
+  {
+    "Key": "[AST]",
+    "Value": "[A][S][T]"
+  },
+  {
+    "Key": "AST tool",
+    "Value": "[A][S][T] tool"
+  },
+  {
+    "Key": "myperformance",
+    "Value": "my performance"
+  },
+  {
+    "Key": "myte",
+    "Value": "mytee"
+  },
+  {
+    "Key": "myTE",
+    "Value": "mytee"
+  },
+  {
+    "Key": "Myte",
+    "Value": "mytee"
+  },
+  {
+    "Key": "Mahashivarathri",
+    "Value": "Mahashivaraathri"
+  },
+  {
+    "Key": "Barath",
+    "Value": "Baraath"
+  },
+  {
+    "Key": "Maharshi Valmiki",
+    "Value": "Maha rishi Valmiki"
+  },
+  {
+    "Key": "myworkplace",
+    "Value": "my work place"
+  },
+  {
+    "Key": "myvoice",
+    "Value": "my voice"
+  },
+  {
+    "Key": "myteam",
+    "Value": "my team"
+  },
+  {
+    "Key": "myrecognition",
+    "Value": "my recognition"
+  },
+  {
+    "Key": "mywellbeing",
+    "Value": "my wellbeing"
+  },
+  {
+    "Key": "myxperience",
+    "Value": "my xperience"
+  },
+  {
+    "Key": "PA",
+    "Value": "P A"
+  },
+  {
+    "Key": "Followup",
+    "Value": "Follow up"
+  },
+  {
+    "Key": "CareerDev",
+    "Value": "Career Dev"
+  },
+  {
+    "Key": "emp number",
+    "Value": "employee number"
+  },
+  {
+    "Key": "emp id",
+    "Value": "employee id"
+  },
+  {
+    "Key": "SM",
+    "Value": "S M"
+  },
+  {
+    "Key": "SE",
+    "Value": "S E"
+  },
+  {
+    "Key": "S.K.Kulkarni",
+    "Value": "S K Kulkarni"
+  },
+  {
+    "Key": "sanjay podder",
+    "Value": "sanjay pod daar"
+  },
+  {
+    "Key": "chad t jerdee",
+    "Value": "chad tee jerdee"
+  },
+  {
+    "Key": "Prabir Ghoushal Kumar",
+    "Value": "prabir ghaou shal kumar"
+  },
+  {
+    "Key": "prabir ghoushal",
+    "Value": "prabir ghou shal"
+  },
+  {
+    "Key": "rp",
+    "Value": "r p"
+  },
+  {
+    "Key": "sunil rao",
+    "Value": "suneel rao"
+  },
+  {
+    "Key": "prakasam kalathuru",
+    "Value": "pra kasam kala thuru"
+  },
+  {
+    "Key": "raghavan iyer",
+    "Value": "raaghvan iyer"
+  },
+  {
+    "Key": "ragavan iyer",
+    "Value": "raagavan iyer"
+  },
+  {
+    "Key": "prashant i dhume",
+    "Value": "prashant indirakant dhume"
+  },
+  {
+    "Key": "New Year’s Day",
+    "Value": "New Years Day"
+  },
+  {
+    "Key": "Bhogi",
+    "Value": "Bhogee"
+  },
+  {
+    "Key": "https://support.accenture.com",
+    "Value": "https://supportdotaccenturedotcom"
+  },
+  {
+    "Key": "Deepavali",
+    "Value": "Deepa va lee"
+  },
+  {
+    "Key": "Makar Sankranti",
+    "Value": "Makar Sank raan ti"
+  },
+  {
+    "Key": "i.e.",
+    "Value": "that is"
+  },
+  {
+    "Key": "india.asthelpdesk",
+    "Value": "india.[A][S][T] help desk"
+  },
+  {
+    "Key": "DiPA",
+    "Value": " Deepa"
+  },
+  {
+    "Key": "Ellyn Shook",
+    "Value": "Ellyan Shook"
+  },
+  {
+    "Key": "Shantha Maheswari",
+    "Value": "Shantha Mahes wari"
+  },
+  {
+    "Key": "shantha maheswari",
+    "Value": "Shantha Mahes wari"
+  },
+  {
+    "Key": "Ghoushal",
+    "Value": "Ghou shal"
+  },
+  {
+    "Key": "a/c",
+    "Value": "account"
+  },
+  {
+    "Key": "A/c",
+    "Value": "account"
+  },
+  {
+    "Key": "DOJ",
+    "Value": "Date of Joining"
+  },
+  {
+    "Key": "CompPlan",
+    "Value": "compensation plan"
+  },
+  {
+    "Key": "our",
+    "Value": "[our]"
+  },
+  {
+    "Key": "Our",
+    "Value": "[our]"
+  },
+  {
+    "Key": "gurupurab",
+    "Value": "gurupurb"
+  },
+  {
+    "Key": "Buddh Poornima",
+    "Value": "Budh Poornima"
+  },
+  {
+    "Key": "Sekar",
+    "Value": "Shekhharr"
+  },
+  {
+    "Key": "Shekhar",
+    "Value": "Shekhharr"
+  },
+  {
+    "Key": "myperformance",
+    "Value": "my performance"
+  },
+  {
+    "Key": "people.accenture",
+    "Value": "people.accenture"
+  },
+  {
+    "Key": "approver",
+    "Value": "approover"
+  },
+  {
+    "Key": "ASOC",
+    "Value": "[ASOC]"
+  },
+  {
+    "Key": "hrs",
+    "Value": "hours"
+  },
+  {
+    "Key": "Hrs",
+    "Value": "hours"
+  },
+  {
+    "Key": "Bengali New Year s",
+    "Value": "Bengali New Years"
+  },
+  {
+    "Key": "Buddh Pournima",
+    "Value": "Budh Poornima"
+  },
+  {
+    "Key": "Buddh Purnima",
+    "Value": "Budh Poornima"
+  },
+  {
+    "Key": "Buddha Poornima",
+    "Value": "Budh Poornima"
+  },
+  {
+    "Key": "Buddha Purnima",
+    "Value": "Budh Poornima"
+  },
+  {
+    "Key": "Buddha Pournima",
+    "Value": "Budh Poornima"
+  },
+  {
+    "Key": "Chandramana Ugadhi",
+    "Value": "Chandramanna Ugadi"
+  },
+  {
+    "Key": "Chandramana Ugadi",
+    "Value": "Chandramanna Ugadi"
+  },
+  {
+    "Key": "Gudi Padwa",
+    "Value": "Gudi Parwa"
+  },
+  {
+    "Key": "GudiPadwa",
+    "Value": "Gudi Parwa"
+  },
+  {
+    "Key": "Chhatrapati Shivaji Jayanthi",
+    "Value": "[Chhatrapati] Shivaji Jayanthi"
+  },
+  {
+    "Key": "Chhatrapati Shivaji Jayanti",
+    "Value": "[Chhatrapati] Shivaji Jayanthi"
+  },
+  {
+    "Key": "Chhatrapati Shivaji Maharaj Jayanthi",
+    "Value": "[Chhatrapati] Shivaji Jayanthi"
+  },
+  {
+    "Key": "Chhatrapati Shivaji Maharaj Jayanti",
+    "Value": "[Chhatrapati] Shivaji Jayanthi"
+  },
+  {
+    "Key": "Eve of x - mas",
+    "Value": "Eve of x mas"
+  },
+  {
+    "Key": "Eve of x mas",
+    "Value": "Eve of x mas"
+  },
+  {
+    "Key": "Dr. Ambedkar Jayanthi",
+    "Value": "Dr. Ambedkar Jayanthi"
+  },
+  {
+    "Key": "Dr. Ambedkar Jayanti",
+    "Value": "Dr. Ambedkar Jayanthi"
+  },
+  {
+    "Key": "Dr. Baba Saheb Ambedkar Jayanti",
+    "Value": "Dr. Baba Saheb Ambedkar Jayanti"
+  },
+  {
+    "Key": "Dr. BabaSaheb Ambedkar Jayanthi",
+    "Value": "Dr. Baba Saheb Ambedkar Jayanti"
+  },
+  {
+    "Key": "Dr. BabaSaheb Ambedkar Jayanti",
+    "Value": "Dr. Baba Saheb Ambedkar Jayanti"
+  },
+  {
+    "Key": "Vinayaka Chaturthi",
+    "Value": "Vinayaka Chaturthi"
+  },
+  {
+    "Key": "Jamat -Ul- Vida",
+    "Value": "Jamaat [Ul] Vida"
+  },
+  {
+    "Key": "Jamat-Ul-Vida",
+    "Value": "Jamaat [Ul] Vida"
+  },
+  {
+    "Key": "Jamat Ul Vida",
+    "Value": "Jamaat [Ul] Vida"
+  },
+  {
+    "Key": "I.T",
+    "Value": "I T"
+  },
+  {
+    "Key": "People.Accenture",
+    "Value": "People dot Accenture"
+  },
+  {
+    "Key": "people.accenture",
+    "Value": "People dot Accenture"
+  },
+  {
+    "Key": "MAL",
+    "Value": "Months At Level"
+  },
+  {
+    "Key": "DiP A",
+    "Value": "deepaaa"
+  },
+  {
+    "Key": "LoA ",
+    "Value": "L O [A]"
+  },
+  {
+    "Key": "LoA,",
+    "Value": "L O [A]"
+  },
+  {
+    "Key": "LoA",
+    "Value": "L O [A]"
+  },
+  {
+    "Key": "tanaya mishra",
+    "Value": "tannya mishra"
+  },
+  {
+    "Key": "Mahanavami",
+    "Value": "Maha navami"
+  },
+  {
+    "Key": "Vaisakhadi",
+    "Value": "Vaisaakhi"
+  },
+  {
+    "Key": "New Year s Day",
+    "Value": "New Years Day"
+  },
+  {
+    "Key": "Pongal",
+    "Value": "Poongal"
+  },
+  {
+    "Key": "Rama Navami",
+    "Value": "Ram Navami"
+  },
+  {
+    "Key": "Shab-E-Qadar",
+    "Value": "shub ee qadra"
+  },
+  {
+    "Key": "Varalakshmi Vratham",
+    "Value": "Vara lakshmi Vratham"
+  },
+  {
+    "Key": "pierre nanterme",
+    "Value": "pierre nanterme"
+  },
+  {
+    "Key": "ASE",
+    "Value": "A S E"
+  },
+  {
+    "Key": "SE",
+    "Value": "S E"
+  },
+  {
+    "Key": "CareerDev",
+    "Value": "Career Ddev"
+  },
+  {
+    "Key": "ATCI",
+    "Value": "A T C I"
+  }
+]

@@ -1,0 +1,39 @@
+﻿ 
+    var Obj_Ctrl;
+    function Disp(Mess, Ctrl_To_Focus) {
+        Obj_Ctrl = Ctrl_To_Focus;
+        document.getElementById('Div_Mess').style.display = 'block';
+        //document.getElementById('Div_Mess').innerHTML = '<br><table cellpadding=5 cellspacing=0 border=0  align=center><tr><td class="Div_pop_Mess"   align=center>' + Mess + '</td></tr><tr><td     align=center><input type="button" id = "ID_No_Name" onclick="Hide();" value="OK"/> </td></tr><tr><td><input type="hidden" id = "ID_No_hidden_1234" value=""/><br></td></tr></table>';
+        //document.getElementById('Div_Mess').innerHTML = '<br><table cellpadding=5 cellspacing=0 border=0  align=center><tr><td class="Div_pop_Mess"   align=center><textarea id="lbl_ID_text" style="border:solid 0pt;" onblur="Javascript:document.getElementById("ID_No_Name").focus();" title=Alert name="lbl_ID_text" rows=3 cols=45  tabindex=0 >' + Mess + '</textarea></td></tr><tr><td     align=center><input type="button" tabindex=1 id = "ID_No_Name" onclick="Hide();" value="OK"/> </td></tr><tr><td><input type="hidden" id = "ID_No_hidden_1234" value=""/><br></td></tr></table>';
+        document.getElementById('Div_Mess').innerHTML = '<br><table cellpadding=5 cellspacing=0 border=0  align=center><tr><td class="Div_pop_Mess"   align=center>' + Mess + '</td></tr><tr><td     align=center><span id="spnPopuptext" alt="Reallocation" title="'+Mess+'" tabindex=-8><input type="button" alt="Reallocation" title="Reallocation Focus" id = "ID_No_Name" onclick="Hide();" value="OK"/></span> </td></tr><tr><td><input type="hidden" id = "ID_No_hidden_1234" value=""/><br></td></tr></table>';
+        document.getElementById("ID_No_hidden_1234").value = Ctrl_To_Focus;
+        
+        document.getElementById("spnPopuptext").focus();
+        //document.getElementById("lbl_ID_text").focus();
+        document.getElementById('Div_Fade').style.display = 'block';
+        return 1;
+
+    }
+
+    function Hide() {
+
+        document.getElementById('Div_Mess').style.display = 'none';
+
+        document.getElementById('Div_Fade').style.display = 'none';
+
+        var Ctrl_To_Focus = document.getElementById("ID_No_hidden_1234").value;
+
+        try {
+            if (Ctrl_To_Focus != "")
+                document.getElementById(Ctrl_To_Focus).focus();
+
+        }
+        catch (Ex) {
+
+            // alert(Ex);
+            if (Obj_Ctrl != null && Obj_Ctrl != "")
+                Obj_Ctrl.focus();
+        }
+
+    }
+ 

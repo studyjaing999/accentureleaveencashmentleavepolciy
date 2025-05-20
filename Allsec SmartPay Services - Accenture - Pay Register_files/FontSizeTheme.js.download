@@ -1,0 +1,104 @@
+/*Set FontSize ThemeColor*/
+//jQuery(document).ready(function($) {
+$(document).ready(function () {
+
+    $("#zf--larger-font-button,#zf--smaller-font-button,#zf--low-brightness-theme-button,#zf--inverted-theme-button,#zf--accessibility-options-reset-button").click(function () {
+
+        var type = $(this).val();
+        var fontTheme = "";
+
+        var zf__html = document.getElementById('zf__html');
+        var lblfontSize = functions.getElement('lblfontSize');
+        var style = zf__html.style.fontSize;
+        var fontSize = parseFloat(style == "" ? "100" : style);
+
+        if (type == "Increase") {
+
+            if (parseFloat(lblfontSize.innerHTML) < 120 || lblfontSize.innerHTML == "")
+                lblfontSize.innerHTML = lblfontSize.innerHTML == "" ? fontSize : parseFloat(lblfontSize.innerHTML) + 10;
+
+            SetFontTheme(lblfontSize.innerHTML, type, $(this).context.id);
+
+
+        }
+        else if (type == "Decrease") {
+            if (parseFloat(lblfontSize.innerHTML) > 80 || lblfontSize.innerHTML == "")
+                lblfontSize.innerHTML = lblfontSize.innerHTML == "" ? fontSize : parseFloat(lblfontSize.innerHTML) - 10;
+
+            SetFontTheme(lblfontSize.innerHTML, type, $(this).context.id);
+
+        }
+        else if (type == "Contrast") {
+            $("#zf--body").removeClass("default-layout zf--theme-inverted").addClass(" zf--theme-low-brightness default-layout").attr("style", "background-color: rgb(160, 160, 160)");
+            SetFontTheme("default-layout zf--theme-inverted|zf--theme-low-brightness default-layout|background-color: rgb(160, 160, 160)", type, $(this).context.id);
+        }
+        else if (type == "Inverted") {
+            $("#zf--body").removeClass("zf--theme-low-brightness default-layout").addClass(" zf--theme-inverted").attr("style", "");
+            SetFontTheme("zf--theme-low-brightness default-layout|zf--theme-inverted|", type, $(this).context.id);
+        }
+        else if (type == "Default") {
+            $("#zf--body").removeClass("zf--theme-low-brightness default-layout zf--theme-inverted").addClass(" default-layout").attr("style", "");
+            SetFontTheme("zf--theme-low-brightness default-layout zf--theme-inverted|default-layout|", type, $(this).context.id);
+        }
+        else if (type == "Reset") {
+            $("#zf--body").removeClass("zf--theme-low-brightness default-layout zf--theme-inverted").addClass(" default-layout").attr("style", "");
+            SetFontTheme("zf--theme-low-brightness default-layout zf--theme-inverted|default-layout|", type, $(this).context.id);
+            SetFontTheme("100", "Decrease", $(this).context.id);
+            lblfontSize.innerHTML = "100";
+        }
+
+
+        document.getElementById('zf__html').style.fontSize = lblfontSize.innerHTML + "%";
+        return false;
+    });
+
+});
+
+function SetFontTheme(val, type, sender) {
+    try {
+        jsondata = '{"val":"' + val + '","type":"' + type + '"}';
+        $.ajax({
+            type: "POST",
+            async: true,
+            url: "../Common/JSon.aspx/setFontSizeThemeColor",
+            data: jsondata,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (response) {
+                var jsonRespond = response.d;
+
+            },
+            failure: function (response) {
+                alert("error");
+            }
+        });
+    }
+    catch (ex) {
+        alert(ex);
+    }
+
+}
+
+
+function setModifiedFontSizeTheme() {
+
+    var lblfontSize = functions.getElement('lblfontSize');
+    var lblTheme = functions.getElement('lblTheme');
+    var arrTheme = lblTheme.innerHTML.split("|");
+
+    if (lblfontSize.innerHTML == "") lblfontSize.innerHTML = "100";
+
+    document.getElementById('zf__html').style.fontSize = lblfontSize.innerHTML + "%";
+    $("#zf--body").removeClass(arrTheme[0]).addClass(arrTheme[1]).attr("style", arrTheme[2]);
+
+    //$(functions.getElement('__VIEWSTATEGENERATOR').parentElement).addClass("DummyTabRemoveClass");
+
+}
+
+function onfocusWhenToogled() {
+    //var className = document.getElementById("divMenuToggle").className;
+
+    //if (!className.includes("toggled")) {
+    //    functions.getElement("zf--main-content--skin").focus();
+    //}
+}
